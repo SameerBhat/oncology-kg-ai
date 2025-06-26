@@ -8,7 +8,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const MONGO_URI = "mongodb://localhost:27017";
+const MONGO_URI = process.env.DATABASE_URI;
 const DATABASE_NAME = "testvectors";
 
 const fruits = [
