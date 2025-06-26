@@ -6,7 +6,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const query = "green rind";
+const query = "Which fruits are citrusy?";
 
 const embeddingResponse = await openai.embeddings.create({
   model: "text-embedding-3-small", // or "text-embedding-ada-002"
@@ -36,6 +36,11 @@ const results = await db.collection("fruits").aggregate([
   }
 ]).toArray();
 
-console.log("Top Results:", results);
+console.log("Top Results:", results.map(result => {
+  const { embedding, ...fruit } = result;
+  return {
+    ...fruit
+  };
+}));  
 
 await client.close();

@@ -2,10 +2,10 @@
   "name": "count-tokens",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "calculate-tokens.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node calculate-tokens.js"
   },
   "keywords": [],
   "author": "",
