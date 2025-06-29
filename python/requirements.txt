@@ -1,0 +1,5 @@
+pymongo
+nltk
+sentence-transformers
+torch
+python-dotenv

@@ -1,22 +1,10 @@
-import os
-from pymongo import MongoClient
-from sentence_transformers import SentenceTransformer
-from nltk.tokenize import sent_tokenize
-import nltk
-import torch
 
-# Download NLTK data if needed
+from pymongo import MongoClient
+import nltk
+from src.utils import DATABASE_NAME, MONGO_URI, embed_text
+
 nltk.download('punkt_tab')
 
-# Load environment variables (or hardcode if preferred)
-MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
-DATABASE_NAME = "testvectors"
-
-# Load embedding model
-model = SentenceTransformer("jinaai/jina-embeddings-v2-base-en", trust_remote_code=True)
-model.max_seq_length = 8192  # Set max length explicitly for Jina v2
-
-# Fruit data
 fruits = [
     {"name": "Apple", "color": "Red", "weight": 150, "description": "A sweet red fruit", "attributes": ["crunchy", "juicy"], "whenToAvoid": "When overripe"},
     {"name": "Banana", "color": "Yellow", "weight": 120, "description": "A soft yellow fruit", "attributes": ["sweet", "soft"], "whenToAvoid": "When too ripe"},
@@ -39,17 +27,13 @@ fruits = [
     {"name": "Pomegranate", "color": "Red", "weight": 300, "description": "A fruit with a tough outer skin and juicy seeds inside", "attributes": ["tart", "sweet"], "whenToAvoid": "When too dry"},
 ]
 
-# Safeguard for max token estimation (~3.5 words/token)
-MAX_TOKENS = 8192
-AVG_WORDS_PER_TOKEN = 0.75
-MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 
-def truncate_text(text, max_words=MAX_WORDS):
-    words = text.split()
-    if len(words) <= max_words:
-        return text
-    else:
-        return ' '.join(words[:max_words])
+
+
+# Safeguard for max token estimation (~3.5 words/token)
+
+
+
 
 def generate_fruit_text(fruit):
     return f"{fruit['name']} is a {fruit['color']} fruit weighing {fruit['weight']} grams. " \
@@ -57,11 +41,7 @@ def generate_fruit_text(fruit):
            f"Attributes include: {', '.join(fruit['attributes'])}. " \
            f"When to avoid: {fruit['whenToAvoid']}."
 
-def embed_text(text):
-    sentences = sent_tokenize(text)
-    # Optionally chunk if needed later
-    embedding = model.encode(text, convert_to_tensor=True)
-    return embedding.cpu().tolist()
+
 
 def main():
     client = MongoClient(MONGO_URI)
@@ -71,7 +51,7 @@ def main():
     documents = []
 
     for fruit in fruits:
-        input_text = truncate_text(generate_fruit_text(fruit))
+        input_text = generate_fruit_text(fruit)
         embedding = embed_text(input_text)
 
         documents.append({

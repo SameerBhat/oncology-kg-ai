@@ -8,7 +8,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const MONGO_URI = process.env.DATABASE_URI;
+// const MONGO_URI = process.env.DATABASE_URI;
+const MONGO_URI = "mongodb://localhost:27017"; // replace with your MongoDB URI
 const DATABASE_NAME = "testvectors";
 
 const fruits = [
@@ -44,9 +45,11 @@ async function main() {
     const documents = [];
 
     for (const fruit of fruits) {
+      const inputText = `${fruit.name} is a ${fruit.color} fruit weighing ${fruit.weight} grams. It is described as: ${fruit.description}. Attributes include: ${fruit.attributes.join(", ")}. When to avoid: ${fruit.whenToAvoid}.`;
       const embeddingResponse = await openai.embeddings.create({
-        model: "text-embedding-3-small", // or "text-embedding-ada-002"
-        input: fruit.description,
+        model: "" +
+            "", // or "text-embedding-ada-002"
+        input: inputText,
       });
 
       const embedding = embeddingResponse.data[0].embedding;
