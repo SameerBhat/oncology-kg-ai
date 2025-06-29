@@ -11,7 +11,9 @@ AVG_WORDS_PER_TOKEN = 0.75
 MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 
 # Load environment variables (or hardcode if preferred)
-MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhostchanged:27017")
+print(f"DATABASE_URI env var: {os.getenv('DATABASE_URI')}")
+print(f"All DATABASE related env vars: {[k for k in os.environ.keys() if 'DATABASE' in k.upper()]}")
+MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
 DATABASE_NAME = "testvectors"
 
 print(f"Using MongoDB URI: {MONGO_URI}")
