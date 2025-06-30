@@ -15,7 +15,7 @@ MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 # print(f"DATABASE_URI env var: {os.getenv('DATABASE_URI')}")
 # print(f"All DATABASE related env vars: {[k for k in os.environ.keys() if 'DATABASE' in k.upper()]}")
 MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
-DATABASE_NAME = "testvectors"
+DATABASE_NAME = "oncopro"
 
 # print(f"Using MongoDB URI: {MONGO_URI}")
 # Load embedding model once at module level with retry logic

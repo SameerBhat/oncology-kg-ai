@@ -68,3 +68,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# import torch
+# print(torch.cuda.is_available())  # Should be False
+# print(torch.backends.mps.is_available())  # Should be True
