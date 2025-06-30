@@ -45,7 +45,7 @@ def main():
     db = client[DATABASE_NAME]
     nodes_collection = db["nodes"]
 
-    # Get all nodes from the collection
+    # Get all nodes from the collection, fetch nodes where embedding is missing
     nodes = list(nodes_collection.find({}))  # Fetch all documents
     documents_updated = 0
 
