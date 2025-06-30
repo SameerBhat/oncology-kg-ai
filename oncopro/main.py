@@ -1,33 +1,14 @@
-"""
-Batch-embed node documents using Jina model and update MongoDB **fast**.
-
-What’s new (v2 → v3)
---------------------
-* **Single progress bar** — no more duplicate lines.
-* **Per-node updates** via `as_completed`, so throughput is always live.
-* **Elapsed / left / rate** shown in `tqdm` postfix.
-"""
-
-from __future__ import annotations
-
 import logging
-import os
-import time
-from datetime import timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List
-
-import nltk
 from pymongo import MongoClient, UpdateOne
 from tqdm import tqdm
 
 from src.utils import DATABASE_NAME, MONGO_URI, embed_text_using_jina_model
 
-nltk.download("punkt_tab")
+# import nltk
+# nltk.download('punkt_tab')
 
-# ─────────────────────────── Configuration ────────────────────────────
-BATCH_SIZE = int(os.getenv("EMBED_BATCH", "500"))     # docs per DB bulk-write
-MAX_WORKERS = int(os.getenv("EMBED_WORKERS", "8"))    # concurrent embed calls
+# Tune this based on the size of your documents and available RAM/CPU
+BATCH_SIZE = 500
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,26 +16,32 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
-# ───────────────────────────── Helpers ────────────────────────────────
+
 def generate_node_text(node: dict) -> str:
-    """Concat relevant node fields into one text block."""
-    parts: List[str] = []
+    """Build a single text block from the various node fields."""
+    parts: list[str] = []
 
-    for key, label in (
-            ("text", "Title"),
-            ("richText", "Description"),
-            ("notes", "Notes"),
-    ):
-        val = (node.get(key) or "").strip()
-        if val:
-            parts.append(f"{label}: {val}")
+    text = (node.get("text") or "").strip()
+    if text:
+        parts.append(f"Title: {text}")
 
-    links = [l for l in node.get("links") or [] if isinstance(l, str)]
+    rich_text = (node.get("richText") or "").strip()
+    if rich_text:
+        parts.append(f"Description: {rich_text}")
+
+    notes = (node.get("notes") or "").strip()
+    if notes:
+        parts.append(f"Notes: {notes}")
+
+    links = node.get("links") or []
     if links:
-        parts.append("Links: " + ", ".join(links))
+        str_links = [l for l in links if isinstance(l, str)]
+        if str_links:
+            parts.append("Links: " + ", ".join(str_links))
 
-    attr_parts: List[str] = []
-    for attr in node.get("attributes") or []:
+    attributes = node.get("attributes") or []
+    attr_parts: list[str] = []
+    for attr in attributes:
         if not isinstance(attr, dict):
             continue
         name = (attr.get("name") or "").strip()
@@ -67,88 +54,59 @@ def generate_node_text(node: dict) -> str:
     return " ".join(parts)
 
 
-def embed_single(node: dict):
-    """Return (_id, embedding) or None on failure."""
-    try:
-        text = generate_node_text(node)
-        emb = embed_text_using_jina_model(text)
-        return node["_id"], emb
-    except Exception as exc:  # noqa: BLE001
-        logging.exception("Embedding failed for %s: %s", node.get("_id"), exc)
-        return None
+def log_progress(processed: int, total: int) -> None:
+    """Log a nicely formatted progress line with totals and remaining count."""
+    remaining = total - processed
+    percentage = (processed / total * 100) if total else 0
+    logging.info(
+        "Processed %s / %s nodes (%.2f%%) – %s left",
+        processed,
+        total,
+        percentage,
+        remaining,
+    )
 
 
-def _collect_and_write(
-        futures,
-        collection,
-        pbar: tqdm,
-        total: int,
-        t0: float,
-) -> None:
-    """Gather futures, tick progress per node, then bulk-write once."""
-    ops: List[UpdateOne] = []
-
-    for fut in as_completed(futures):
-        result = fut.result()
-
-        # ─── progress UI ───
-        elapsed = timedelta(seconds=int(time.perf_counter() - t0))
-        left = total - (pbar.n + 1)
-        pbar.update()
-        pbar.set_postfix(
-            left=left,
-            elapsed=str(elapsed),
-            rate=f"{pbar.format_dict['rate']:.1f}/s" if pbar.format_dict["rate"] else "–",
-            refresh=False,
-        )
-
-        if result:
-            _id, emb = result
-            ops.append(UpdateOne({"_id": _id}, {"$set": {"embedding": emb}}))
-
-    if ops:
-        collection.bulk_write(ops, ordered=False)
-
-
-# ────────────────────────────── Main ─────────────────────────────────
 def main() -> None:
     client = MongoClient(MONGO_URI)
     db = client[DATABASE_NAME]
     nodes_collection = db["nodes"]
 
-    query = {"embedding": {"$exists": False}}
-    total = nodes_collection.count_documents(query)
-    logging.info("Found %s nodes without embeddings", total)
+    filter_query = {"embedding": {"$exists": False}}
+    total_nodes = nodes_collection.count_documents(filter_query)
+    logging.info("Found %s nodes without embeddings", total_nodes)
 
-    cursor = nodes_collection.find(query, batch_size=BATCH_SIZE)
-    start_time = time.perf_counter()
+    cursor = nodes_collection.find(filter_query, batch_size=BATCH_SIZE)
 
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool, tqdm(
-            total=total,
-            desc="Embedding nodes",
-            unit="node",
-            dynamic_ncols=True,
-            bar_format=" {l_bar}{bar} | {n_fmt}/{total_fmt} | {rate_fmt} ",
-            mininterval=0.5,
-            smoothing=0.1,
-    ) as pbar:
-        batch_nodes: List[dict] = []
-        futures: List = []
+    batch_ops: list[UpdateOne] = []
+    processed = 0
 
-        for node in cursor:
-            batch_nodes.append(node)
-            if len(batch_nodes) >= BATCH_SIZE:
-                futures.extend(pool.submit(embed_single, n) for n in batch_nodes)
-                _collect_and_write(futures, nodes_collection, pbar, total, start_time)
-                batch_nodes, futures = [], []
+    for node in tqdm(cursor, total=total_nodes, desc="Embedding nodes"):
+        input_text = generate_node_text(node)
+        try:
+            embedding = embed_text_using_jina_model(input_text)
+        except Exception as exc:  # noqa: BLE001
+            logging.exception("Failed to embed node %s: %s", node.get("_id"), exc)
+            continue
 
-        # leftovers
-        if batch_nodes:
-            futures.extend(pool.submit(embed_single, n) for n in batch_nodes)
-        if futures:
-            _collect_and_write(futures, nodes_collection, pbar, total, start_time)
+        batch_ops.append(
+            UpdateOne({"_id": node["_id"]}, {"$set": {"embedding": embedding}})
+        )
 
-    logging.info("✅ Finished updating %s nodes.", pbar.n)
+        # Flush the batch to MongoDB when it reaches the configured size
+        if len(batch_ops) >= BATCH_SIZE:
+            result = nodes_collection.bulk_write(batch_ops, ordered=False)
+            processed += result.modified_count
+            log_progress(processed, total_nodes)
+            batch_ops = []
+
+    # Write any remaining operations after the loop finishes
+    if batch_ops:
+        result = nodes_collection.bulk_write(batch_ops, ordered=False)
+        processed += result.modified_count
+        log_progress(processed, total_nodes)
+
+    logging.info("✅ Finished embedding %s nodes.", processed)
 
 
 if __name__ == "__main__":
