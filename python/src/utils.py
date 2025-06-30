@@ -2,7 +2,8 @@ import os
 import time
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-
+from transformers import AutoTokenizer, AutoModel
+import torch
 # Load environment variables from .env file
 load_dotenv()
 
@@ -37,14 +38,53 @@ def load_jina_model_with_retry(max_retries=3, delay=5):
                     raise
             else:
                 raise
+def load_qwen3_with_retry(max_retries=3, delay=5):
+    model_name = "Qwen/Qwen3-Embedding-0.6B"
+    for attempt in range(max_retries):
+        try:
+            print(f"Loading Qwen3 embedding model... (attempt {attempt + 1}/{max_retries})")
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModel.from_pretrained(model_name)
+            print("Qwen3 model loaded successfully!")
+            return tokenizer, model
+        except Exception as e:
+            print(f"Error loading Qwen3: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+# jina_model = load_jina_model_with_retry()
+qwen_tokenizer, qwen_model = load_qwen3_with_retry()
 
-jina_model = load_jina_model_with_retry()
+# def embed_text_using_jina_model(text):
+#     chunks = split_text_into_chunks(text)
+#     embeddings = jina_model.encode(chunks, convert_to_tensor=True)
+#     avg_embedding = embeddings.mean(dim=0)
+#     return avg_embedding.cpu().tolist()
 
-def embed_text_using_jina_model(text):
+
+def embed_text_using_qwen3_model(text):
     chunks = split_text_into_chunks(text)
-    embeddings = jina_model.encode(chunks, convert_to_tensor=True)
-    avg_embedding = embeddings.mean(dim=0)
-    return avg_embedding.cpu().tolist()
+    all_embeddings = []
+
+    for chunk in chunks:
+        inputs = qwen_tokenizer(chunk, return_tensors="pt", truncation=True, padding=True)
+        with torch.no_grad():
+            outputs = qwen_model(**inputs)
+            hidden_states = outputs.last_hidden_state
+            attention_mask = inputs["attention_mask"]
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
+            sum_embeddings = torch.sum(hidden_states * input_mask_expanded, 1)
+            sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+            mean_embedding = sum_embeddings / sum_mask
+            all_embeddings.append(mean_embedding)
+
+    stacked = torch.stack(all_embeddings)
+    final_embedding = stacked.mean(dim=0)
+    return final_embedding.squeeze(0).cpu().tolist()
+
 
 def split_text_into_chunks(text, max_words=MAX_WORDS):
     words = text.split()
@@ -53,3 +93,6 @@ def split_text_into_chunks(text, max_words=MAX_WORDS):
         chunk = ' '.join(words[i:i + max_words])
         chunks.append(chunk)
     return chunks
+
+
+

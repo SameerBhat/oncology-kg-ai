@@ -1,7 +1,7 @@
 
 from pymongo import MongoClient
 import nltk
-from src.utils import DATABASE_NAME, MONGO_URI, embed_text_using_jina_model
+from src.utils import DATABASE_NAME, MONGO_URI, embed_text_using_qwen3_model
 
 nltk.download('punkt_tab')
 
@@ -52,7 +52,7 @@ def main():
 
     for fruit in fruits:
         input_text = generate_fruit_text(fruit)
-        embedding = embed_text_using_jina_model(input_text)
+        embedding = embed_text_using_qwen3_model(input_text)
 
         documents.append({
             **fruit,
