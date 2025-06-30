@@ -20,6 +20,6 @@ def local_cosine_search(query, top_k=5):
     return [{"text": f["text"], "richText": f["richText"], "notes": f["notes"], "links": f["links"], "attributes": f["attributes"], "embedding": f["embedding"], "score": s} for f, s in scored_nodes]
 
 
-results = local_cosine_search("Which nodes are citrusy?", top_k=5)
+results = local_cosine_search("What are the current guidelines for cervical cancer (Zervixkarzinom)?", top_k=5)
 for res in results:
     print(f"{res['text']} ({res['score']:.3f}): {res['richText']} {res['notes']} {res['links']} {res['attributes']}")
