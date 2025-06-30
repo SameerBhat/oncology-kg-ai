@@ -2,7 +2,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from pymongo import MongoClient
 
-from src.utils import DATABASE_NAME, MONGO_URI, embed_text
+from src.utils import DATABASE_NAME, MONGO_URI, embed_text_using_jina_model
 
 
 def local_cosine_search(query, top_k=5):
@@ -11,7 +11,7 @@ def local_cosine_search(query, top_k=5):
     fruits_collection = db["fruits"]
 
     all_fruits = list(fruits_collection.find({}, {"_id": 0, "name": 1, "embedding": 1, "description": 1}))
-    query_embedding = np.array(embed_text(query)).reshape(1, -1)
+    query_embedding = np.array(embed_text_using_jina_model(query)).reshape(1, -1)
     fruit_embeddings = np.array([fruit['embedding'] for fruit in all_fruits])
 
     scores = cosine_similarity(query_embedding, fruit_embeddings)[0]

@@ -11,21 +11,21 @@ AVG_WORDS_PER_TOKEN = 0.75
 MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 
 # Load environment variables (or hardcode if preferred)
-print(f"DATABASE_URI env var: {os.getenv('DATABASE_URI')}")
-print(f"All DATABASE related env vars: {[k for k in os.environ.keys() if 'DATABASE' in k.upper()]}")
+# print(f"DATABASE_URI env var: {os.getenv('DATABASE_URI')}")
+# print(f"All DATABASE related env vars: {[k for k in os.environ.keys() if 'DATABASE' in k.upper()]}")
 MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
 DATABASE_NAME = "testvectors"
 
-print(f"Using MongoDB URI: {MONGO_URI}")
+# print(f"Using MongoDB URI: {MONGO_URI}")
 # Load embedding model once at module level with retry logic
-def load_model_with_retry(max_retries=3, delay=5):
+def load_jina_model_with_retry(max_retries=3, delay=5):
     for attempt in range(max_retries):
         try:
-            print(f"Loading embedding model... (attempt {attempt + 1}/{max_retries})")
-            model = SentenceTransformer("jinaai/jina-embeddings-v2-base-en", trust_remote_code=True)
-            model.max_seq_length = 8192  # Set max length explicitly for Jina v2
+            print(f"Loading embedding jina_model... (attempt {attempt + 1}/{max_retries})")
+            jina_model = SentenceTransformer("jinaai/jina-embeddings-v2-base-en", trust_remote_code=True)
+            jina_model.max_seq_length = 8192  # Set max length explicitly for Jina v2
             print("Model loaded successfully!")
-            return model
+            return jina_model
         except Exception as e:
             if "429" in str(e) or "rate" in str(e).lower():
                 if attempt < max_retries - 1:
@@ -38,11 +38,11 @@ def load_model_with_retry(max_retries=3, delay=5):
             else:
                 raise
 
-model = load_model_with_retry()
+jina_model = load_jina_model_with_retry()
 
-def embed_text(text):
+def embed_text_using_jina_model(text):
     chunks = split_text_into_chunks(text)
-    embeddings = model.encode(chunks, convert_to_tensor=True)
+    embeddings = jina_model.encode(chunks, convert_to_tensor=True)
     avg_embedding = embeddings.mean(dim=0)
     return avg_embedding.cpu().tolist()
 
