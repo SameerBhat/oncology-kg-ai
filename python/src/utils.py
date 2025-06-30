@@ -23,7 +23,15 @@ def load_jina_model_with_retry(max_retries=3, delay=5):
     for attempt in range(max_retries):
         try:
             print(f"Loading embedding jina_model... (attempt {attempt + 1}/{max_retries})")
-            jina_model = SentenceTransformer("jinaai/jina-embeddings-v2-base-en", trust_remote_code=True)
+            jina_model = SentenceTransformer(
+                "jinaai/jina-embeddings-v4",
+                trust_remote_code=True,
+                device="cuda",         # strongly recommended – v4 is 3.8 B
+                model_kwargs={"device_map": "auto", "torch_dtype": torch.bfloat16} # device_map="auto" lets 🤗 Accelerate shard weights across GPUs/CPU
+                    # Use bfloat16 (preferred) or float16 to halve VRAM.
+                    # On a single 24 GB GPU you can run batch_size≈4; multi-GPU sharding helps.
+
+            )
             jina_model.max_seq_length = 8192  # Set max length explicitly for Jina v2
             print("Model loaded successfully!")
             return jina_model
@@ -69,31 +77,36 @@ def load_qwen3_with_retry(max_retries=3, delay=5):
             else:
                 raise   # unrecoverable (e.g. wrong ID or 401 for a private repo)
 
-# jina_model = load_jina_model_with_retry()
-#
-# def embed_text_using_jina_model(text):
-#     chunks = split_text_into_chunks(text)
-#     embeddings = jina_model.encode(chunks, convert_to_tensor=True)
-#     avg_embedding = embeddings.mean(dim=0)
-#     return avg_embedding.cpu().tolist()
+jina_model = load_jina_model_with_retry()
 
-qwen_model = load_qwen3_with_retry()
-
-def embed_text_using_qwen3_model(text: str, *, prompt_name = None):
-    """
-    Returns 1×d Python list (float) – mean pooling over long documents.
-    Use prompt_name='query' when embedding *queries* (recommended by Qwen3 docs).
-    """
-    chunks = split_text_into_chunks(text)   # <- your existing splitter
-    # Encode all chunks at once (handles batching internally)
-    vecs = qwen_model.encode(
-        chunks,
-        convert_to_tensor=True,
-        prompt_name=prompt_name   # None for docs; 'query' for search queries
+def embed_text_using_jina_model(text):
+    chunks = split_text_into_chunks(text)
+    embeddings = jina_model.encode(
+        chunks,                      # list[str] from your splitter
+        task="retrieval",            # or "text-matching" / "code"
+        prompt_name="passage",       # "query" for query embeddings
+        convert_to_tensor=True
     )
-    # Mean-pool across chunks so one vector represents the whole text
-    return vecs.mean(dim=0).cpu().tolist()
+    avg = embeddings.mean(dim=0).cpu().tolist()
+    return avg
 
+# qwen_model = load_qwen3_with_retry()
+#
+# def embed_text_using_qwen3_model(text: str, *, prompt_name = None):
+#     """
+#     Returns 1×d Python list (float) – mean pooling over long documents.
+#     Use prompt_name='query' when embedding *queries* (recommended by Qwen3 docs).
+#     """
+#     chunks = split_text_into_chunks(text)   # <- your existing splitter
+#     # Encode all chunks at once (handles batching internally)
+#     vecs = qwen_model.encode(
+#         chunks,
+#         convert_to_tensor=True,
+#         prompt_name=prompt_name   # None for docs; 'query' for search queries
+#     )
+#     # Mean-pool across chunks so one vector represents the whole text
+#     return vecs.mean(dim=0).cpu().tolist()
+#
 
 def split_text_into_chunks(text, max_words=MAX_WORDS):
     words = text.split()
