@@ -38,52 +38,61 @@ def load_jina_model_with_retry(max_retries=3, delay=5):
                     raise
             else:
                 raise
+# --- 1. loader with retry ----------------------------------------------------
 def load_qwen3_with_retry(max_retries=3, delay=5):
-    model_name = "Qwen/Qwen3-Embedding-0.6B"
-    for attempt in range(max_retries):
+    """
+    Load a Qwen3 text-embedding model via Sentence-Transformers.
+    Retries on transient HF errors (429 / 5xx).
+    """
+    for attempt in range(1, max_retries + 1):
         try:
-            print(f"Loading Qwen3 embedding model... (attempt {attempt + 1}/{max_retries})")
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            model = AutoModel.from_pretrained(model_name)
-            print("Qwen3 model loaded successfully!")
-            return tokenizer, model
-        except Exception as e:
-            print(f"Error loading Qwen3: {e}")
-            if attempt < max_retries - 1:
-                print(f"Retrying in {delay} seconds...")
+            # • Qwen/Qwen3-Embedding-0.6B (≈1 GB, 1 024-d)
+            # • Qwen/Qwen3-Embedding-4B (≈7 GB, 2 560-d)
+            # • Qwen/Qwen3-Embedding-8B (≈14 GB, 4 096-d)
+            print(f"Loading Qwen/Qwen3-Embedding-4B (try {attempt}/{max_retries}) ...")
+            model = SentenceTransformer(
+                "Qwen/Qwen3-Embedding-4B",
+                trust_remote_code=True,
+                model_kwargs={"device_map": "auto"},
+                tokenizer_kwargs={"padding_side": "left"},
+            )
+            # Qwen3 context = 32 k tokens (way above our chunk size)
+            model.max_seq_length = 32_768
+            print("✓ Qwen3 model ready!")
+            return model
+        except Exception as err:
+            # Detect HF rate-limit or transient errors
+            if any(code in str(err) for code in ("429", "502", "503")) and attempt < max_retries:
+                print(f"Transient HF error ({err}). Retry in {delay}s …")
                 time.sleep(delay)
                 delay *= 2
             else:
-                raise
-# jina_model = load_jina_model_with_retry()
-qwen_tokenizer, qwen_model = load_qwen3_with_retry()
+                raise   # unrecoverable (e.g. wrong ID or 401 for a private repo)
 
+# jina_model = load_jina_model_with_retry()
+#
 # def embed_text_using_jina_model(text):
 #     chunks = split_text_into_chunks(text)
 #     embeddings = jina_model.encode(chunks, convert_to_tensor=True)
 #     avg_embedding = embeddings.mean(dim=0)
 #     return avg_embedding.cpu().tolist()
 
+qwen_model = load_qwen3_with_retry()
 
-def embed_text_using_qwen3_model(text):
-    chunks = split_text_into_chunks(text)
-    all_embeddings = []
-
-    for chunk in chunks:
-        inputs = qwen_tokenizer(chunk, return_tensors="pt", truncation=True, padding=True)
-        with torch.no_grad():
-            outputs = qwen_model(**inputs)
-            hidden_states = outputs.last_hidden_state
-            attention_mask = inputs["attention_mask"]
-            input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
-            sum_embeddings = torch.sum(hidden_states * input_mask_expanded, 1)
-            sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-            mean_embedding = sum_embeddings / sum_mask
-            all_embeddings.append(mean_embedding)
-
-    stacked = torch.stack(all_embeddings)
-    final_embedding = stacked.mean(dim=0)
-    return final_embedding.squeeze(0).cpu().tolist()
+def embed_text_using_qwen3_model(text: str, *, prompt_name = None):
+    """
+    Returns 1×d Python list (float) – mean pooling over long documents.
+    Use prompt_name='query' when embedding *queries* (recommended by Qwen3 docs).
+    """
+    chunks = split_text_into_chunks(text)   # <- your existing splitter
+    # Encode all chunks at once (handles batching internally)
+    vecs = qwen_model.encode(
+        chunks,
+        convert_to_tensor=True,
+        prompt_name=prompt_name   # None for docs; 'query' for search queries
+    )
+    # Mean-pool across chunks so one vector represents the whole text
+    return vecs.mean(dim=0).cpu().tolist()
 
 
 def split_text_into_chunks(text, max_words=MAX_WORDS):

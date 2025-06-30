@@ -47,8 +47,7 @@ async function main() {
     for (const fruit of fruits) {
       const inputText = `${fruit.name} is a ${fruit.color} fruit weighing ${fruit.weight} grams. It is described as: ${fruit.description}. Attributes include: ${fruit.attributes.join(", ")}. When to avoid: ${fruit.whenToAvoid}.`;
       const embeddingResponse = await openai.embeddings.create({
-        model: "" +
-            "", // or "text-embedding-ada-002"
+        model: "text-embedding-3-small",
         input: inputText,
       });
 
