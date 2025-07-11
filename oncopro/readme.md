@@ -24,7 +24,7 @@ deactivate
 
 OpenAI embedding models
 text-embedding-3-small $0.02
-text-embedding-3-large $0.13 
+text-embedding-3-large $0.13
 text-embedding-ada-002 $0.10
 
 📊 Summary
