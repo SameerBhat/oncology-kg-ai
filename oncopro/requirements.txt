@@ -3,3 +3,6 @@ nltk
 sentence-transformers
 torch
 python-dotenv
+peft
+accelerate
+transformers>=4.21.0
