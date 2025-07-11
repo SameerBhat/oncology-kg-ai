@@ -1,0 +1,37 @@
+"""
+Configuration module for the embedding system.
+"""
+
+from .settings import (
+    MAX_TOKENS,
+    AVG_WORDS_PER_TOKEN,
+    MAX_WORDS,
+    MONGO_URI,
+    DATABASE_NAME,
+    EMBEDDING_MODEL,
+    JINA_MODEL_NAME,
+    JINA_MAX_SEQ_LENGTH,
+    QWEN_MODEL_NAME,
+    QWEN_MAX_SEQ_LENGTH,
+    OPENAI_MODEL_NAME,
+    OPENAI_MAX_SEQ_LENGTH,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_RETRY_DELAY,
+)
+
+__all__ = [
+    "MAX_TOKENS",
+    "AVG_WORDS_PER_TOKEN", 
+    "MAX_WORDS",
+    "MONGO_URI",
+    "DATABASE_NAME",
+    "EMBEDDING_MODEL",
+    "JINA_MODEL_NAME",
+    "JINA_MAX_SEQ_LENGTH",
+    "QWEN_MODEL_NAME",
+    "QWEN_MAX_SEQ_LENGTH",
+    "OPENAI_MODEL_NAME",
+    "OPENAI_MAX_SEQ_LENGTH",
+    "DEFAULT_MAX_RETRIES",
+    "DEFAULT_RETRY_DELAY",
+]

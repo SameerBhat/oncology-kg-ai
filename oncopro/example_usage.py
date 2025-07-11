@@ -4,7 +4,7 @@ Example usage of the refactored embedding system.
 """
 
 import os
-from src.utils import (
+from src import (
     embed_text,
     get_embedding_model,
     EmbeddingModelFactory,
