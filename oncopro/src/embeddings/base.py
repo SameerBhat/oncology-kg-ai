@@ -2,9 +2,10 @@
 Base abstract class for embedding models.
 """
 import time
-import torch
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
+
+import torch
 
 from ..config import DEFAULT_MAX_RETRIES, DEFAULT_RETRY_DELAY
 

@@ -2,6 +2,7 @@
 Jina AI embedding model implementation.
 """
 from typing import Dict, Any
+
 from sentence_transformers import SentenceTransformer
 
 from .base import EmbeddingModel

@@ -5,8 +5,8 @@ from typing import List
 
 from .base import EmbeddingModel
 from .jina import JinaEmbedding
-from .qwen import QwenEmbedding
 from .openai import OpenAIEmbedding
+from .qwen import QwenEmbedding
 
 
 class EmbeddingModelFactory:

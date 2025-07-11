@@ -2,6 +2,7 @@
 Qwen3 embedding model implementation.
 """
 from typing import Dict, Any, List, Optional
+
 from sentence_transformers import SentenceTransformer
 
 from .base import EmbeddingModel
