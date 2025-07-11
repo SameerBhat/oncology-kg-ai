@@ -2,23 +2,18 @@ import os
 import time
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModel
 import torch
-# Load environment variables from .env file
 load_dotenv()
 
 MAX_TOKENS = 8192
 AVG_WORDS_PER_TOKEN = 0.75
 MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 
-# Load environment variables (or hardcode if preferred)
-# print(f"DATABASE_URI env var: {os.getenv('DATABASE_URI')}")
-# print(f"All DATABASE related env vars: {[k for k in os.environ.keys() if 'DATABASE' in k.upper()]}")
+
 MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
 DATABASE_NAME = "oncopro"
 
-# print(f"Using MongoDB URI: {MONGO_URI}")
-# Load embedding model once at module level with retry logic
+#
 def load_jina_model_with_retry(max_retries=3, delay=5):
     device = (
         "cuda" if torch.cuda.is_available()
@@ -33,7 +28,7 @@ def load_jina_model_with_retry(max_retries=3, delay=5):
             jina_model = SentenceTransformer(
                 "jinaai/jina-embeddings-v4",
                 trust_remote_code=True,
-                device=device,  # ⚠️ important: pass here
+                device=device,
                 model_kwargs={
                     # "use_flash_attn": False,
                     "attn_implementation": "eager",

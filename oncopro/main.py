@@ -1,14 +1,11 @@
 import logging
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 from tqdm import tqdm
 
 from src.utils import DATABASE_NAME, MONGO_URI, embed_text_using_jina_model
 
-# import nltk
-# nltk.download('punkt_tab')
-
-# Tune this based on the size of your documents and available RAM/CPU
-BATCH_SIZE = 500
+import nltk
+nltk.download('punkt_tab')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,9 +73,8 @@ def main() -> None:
     total_nodes = nodes_collection.count_documents(filter_query)
     logging.info("Found %s nodes without embeddings", total_nodes)
 
-    cursor = nodes_collection.find(filter_query, batch_size=BATCH_SIZE)
+    cursor = nodes_collection.find(filter_query)
 
-    batch_ops: list[UpdateOne] = []
     processed = 0
 
     for node in tqdm(cursor, total=total_nodes, desc="Embedding nodes"):
@@ -89,22 +85,16 @@ def main() -> None:
             logging.exception("Failed to embed node %s: %s", node.get("_id"), exc)
             continue
 
-        batch_ops.append(
-            UpdateOne({"_id": node["_id"]}, {"$set": {"embedding": embedding}})
+        # Update the node immediately
+        nodes_collection.update_one(
+            {"_id": node["_id"]}, 
+            {"$set": {"embedding": embedding}}
         )
-
-        # Flush the batch to MongoDB when it reaches the configured size
-        if len(batch_ops) >= BATCH_SIZE:
-            result = nodes_collection.bulk_write(batch_ops, ordered=False)
-            processed += result.modified_count
+        processed += 1
+        
+        # Log progress every 100 nodes
+        if processed % 100 == 0:
             log_progress(processed, total_nodes)
-            batch_ops = []
-
-    # Write any remaining operations after the loop finishes
-    if batch_ops:
-        result = nodes_collection.bulk_write(batch_ops, ordered=False)
-        processed += result.modified_count
-        log_progress(processed, total_nodes)
 
     logging.info("✅ Finished embedding %s nodes.", processed)
 
