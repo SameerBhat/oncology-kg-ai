@@ -36,19 +36,14 @@ class QwenEmbedding(EmbeddingModel):
         Embed text with optional prompt_name for Qwen3.
         Use prompt_name='query' when embedding queries (recommended by Qwen3 docs).
         """
-        # Import here to avoid circular imports
-        from ..config import MAX_WORDS
+        # Use a simple chunking approach directly here to avoid circular imports
+        max_words = 6000  # Conservative default
+        words = text.split()
+        chunks = []
+        for i in range(0, len(words), max_words):
+            chunk = ' '.join(words[i:i + max_words])
+            chunks.append(chunk)
         
-        def split_text_into_chunks(text: str, max_words: int = MAX_WORDS) -> List[str]:
-            """Split text into chunks of specified maximum word count."""
-            words = text.split()
-            chunks = []
-            for i in range(0, len(words), max_words):
-                chunk = ' '.join(words[i:i + max_words])
-                chunks.append(chunk)
-            return chunks
-        
-        chunks = split_text_into_chunks(text)
         embeddings = self.encode_chunks(chunks, prompt_name=prompt_name, **kwargs)
         avg_embedding = embeddings.mean(dim=0).cpu().tolist()
         return avg_embedding
