@@ -1,0 +1,22 @@
+{
+  "name": "oncopro-embeddings",
+  "version": "1.0.0",
+  "description": "A flexible, modular embedding system that supports multiple embedding models with easy switching capabilities.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx tree-parser.ts uberblick-solide-tumoren-16012025-heytens-aktuell.mm category.csv"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.1.0",
+    "mongodb": "^6.17.0",
+    "papaparse": "^5.5.3",
+    "sax": "^1.4.1",
+    "tsx": "^4.20.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.13"
+  }
+}
