@@ -1,75 +1,86 @@
 #!/usr/bin/env python3
 """
-Example usage of the refactored embedding system.
+Generate embeddings for nodes in MongoDB that don't have embeddings yet.
+This script processes all nodes without embeddings and adds them using the configured model.
 """
+
+import logging
+from tqdm import tqdm
 
 from src import (
     embed_text,
-    get_embedding_model,
-    EmbeddingModelFactory
+    MongoDBClient,
+    NodesManager,
+    EMBEDDING_MODEL,
 )
+from src.embedding_utils import setup_logging, ProgressTracker, log_embedding_stats
 
-def main():
 
-    sample_text = """
-    Machine learning is a subset of artificial intelligence that focuses on the development 
-    of algorithms and statistical models that enable computer systems to improve their 
-    performance on a specific task through experience.
-    """
+def main() -> None:
+    """Main function to generate embeddings for nodes without them."""
+    # Set up logging
+    setup_logging()
+    
+    # Log which model we're using
+    logging.info(f"Using embedding model: {EMBEDDING_MODEL}")
+    
+    # Initialize database components
+    with MongoDBClient() as db_client:
+        nodes_manager = NodesManager(db_client)
+        
+        # Get initial statistics
+        stats = nodes_manager.get_collection_stats()
+        log_embedding_stats(stats)
+        
+        # Check if there are nodes to process
+        total_nodes = stats["nodes_without_embeddings"]
+        if total_nodes == 0:
+            logging.info("✅ All nodes already have embeddings!")
+            return
+        
+        # Initialize progress tracking
+        progress = ProgressTracker(total_nodes, "nodes", log_interval=100)
+        
+        # Process nodes without embeddings
+        logging.info(f"Starting to process {total_nodes} nodes without embeddings...")
+        
+        nodes_iterator = nodes_manager.find_nodes_without_embeddings()
+        
+        for node in tqdm(nodes_iterator, total=total_nodes, desc="Embedding nodes"):
+            try:
+                # Generate text content from the node
+                input_text = node.generate_text_content()
+                
+                if not input_text.strip():
+                    logging.warning(f"Node {node._id} has no text content, skipping")
+                    progress.update()
+                    continue
+                
+                # Generate embedding using the configured model
+                embedding = embed_text(input_text)
+                
+                # Update the node in the database
+                success = nodes_manager.update_node_embedding(node._id, embedding)
+                
+                if not success:
+                    logging.error(f"Failed to update node {node._id} in database")
+                    progress.add_error()
+                
+                progress.update()
+                
+            except Exception as exc:
+                logging.exception(f"Failed to embed node {node._id}: {exc}")
+                progress.add_error()
+                progress.update()
+        
+        # Log final results
+        progress.log_final_summary()
+        
+        # Get updated statistics
+        final_stats = nodes_manager.get_collection_stats()
+        log_embedding_stats(final_stats)
 
-    print("=== Embedding System Examples ===\n")
 
-    # 1. Using default model (from environment variable)
-    print("1. Using default model:")
-    try:
-        embedding = embed_text(sample_text)
-        print(f"   Embedding dimension: {len(embedding)}")
-        print(f"   First 5 values: {embedding[:5]}")
-    except Exception as e:
-        print(f"   Error: {e}")
-
-    # 2. Explicitly specify Jina model
-    print("\n2. Using Jina model explicitly:")
-    try:
-        embedding = embed_text(sample_text, model_name="jina")
-        print(f"   Embedding dimension: {len(embedding)}")
-        print(f"   First 5 values: {embedding[:5]}")
-    except Exception as e:
-        print(f"   Error: {e}")
-
-    # 3. Using Qwen model with query prompt
-    print("\n3. Using Qwen model with query prompt:")
-    try:
-        # First for document embedding
-        doc_embedding = embed_text(sample_text, model_name="qwen")
-        print(f"   Document embedding dimension: {len(doc_embedding)}")
-
-        # Then for query embedding
-        query_text = "What is machine learning?"
-        query_embedding = embed_text(query_text, model_name="qwen", prompt_name="query")
-        print(f"   Query embedding dimension: {len(query_embedding)}")
-    except Exception as e:
-        print(f"   Error: {e}")
-
-    # 4. List available models
-    print("\n4. Available models:")
-    available_models = EmbeddingModelFactory.list_available_models()
-    for model in available_models:
-        print(f"   - {model}")
-
-    # 5. Get model instance directly
-    print("\n5. Working with model instance:")
-    try:
-        model = get_embedding_model("jina")
-        print(f"   Model class: {model.__class__.__name__}")
-        print(f"   Device: {model.device}")
-
-        # Use model instance directly
-        chunks = ["This is chunk 1", "This is chunk 2"]
-        embeddings = model.encode_chunks(chunks)
-        print(f"   Encoded {len(chunks)} chunks, shape: {embeddings.shape}")
-    except Exception as e:
-        print(f"   Error: {e}")
 if __name__ == "__main__":
     main()
 

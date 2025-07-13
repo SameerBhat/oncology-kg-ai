@@ -13,10 +13,9 @@ MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 
 # Database configuration
 MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
-DATABASE_NAME = "oncopro"
-
-# Embedding model configuration
+# Database name is based on the embedding model being used
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "jina")  # Default to jina
+DATABASE_NAME = EMBEDDING_MODEL  # Use model name as database name
 
 # Model-specific configurations
 JINA_MODEL_NAME = "jinaai/jina-embeddings-v4"
