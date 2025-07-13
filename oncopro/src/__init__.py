@@ -13,8 +13,8 @@ from .utils import (
 from .embeddings import (
     EmbeddingModel,
     EmbeddingModelFactory,
-    JinaEmbedding,
-    QwenEmbedding,
+    Jina4Embedding,
+    Qwen3Embedding,
     OpenAIEmbedding,
     get_device,
 )
@@ -53,8 +53,8 @@ __all__ = [
     # Classes
     "EmbeddingModel",
     "EmbeddingModelFactory",
-    "JinaEmbedding",
-    "QwenEmbedding", 
+    "Jina4Embedding",
+    "Qwen3Embedding",
     "OpenAIEmbedding",
     
     # Database classes

@@ -6,10 +6,11 @@ This project enables the generation of embeddings from a mindmap structure using
 
 > **Note**: The single source of truth for available models is in [`src/embeddings/factory.py::_models`](src/embeddings/factory.py)
 
-- `jina`
-- `qwen`
+- `jina4`
 - `qwen3`
 - `openai`
+
+> **Note**: actual model name is in [`src/config/settings.py`](src/config/settings.py) in this file.
 
 ## 🧠 Prerequisites
 
@@ -55,3 +56,6 @@ This project enables the generation of embeddings from a mindmap structure using
 The `generate_db_embeddings.py` script is idempotent — running it multiple times will only generate embeddings for nodes that are missing them. Existing embeddings will not be overwritten.
 
 ---
+TLDR;
+- `npm run convert-mm-db`
+- `python generate_db_embeddings.py`

@@ -6,19 +6,19 @@ from typing import Dict, Any, List, Optional
 from sentence_transformers import SentenceTransformer
 
 from .base import EmbeddingModel
-from ..config import QWEN_MODEL_NAME, QWEN_MAX_SEQ_LENGTH
+from ..config import QWEN3_MODEL_NAME, QWEN3_MAX_SEQ_LENGTH
 
 
-class QwenEmbedding(EmbeddingModel):
+class Qwen3Embedding(EmbeddingModel):
     """Qwen3 embedding model implementation."""
     
     def get_model_config(self) -> Dict[str, Any]:
         return {
-            "model_name": QWEN_MODEL_NAME,
+            "model_name": QWEN3_MODEL_NAME,
             "trust_remote_code": True,
             "model_kwargs": {"device_map": "auto"},
             "tokenizer_kwargs": {"padding_side": "left"},
-            "max_seq_length": QWEN_MAX_SEQ_LENGTH
+            "max_seq_length": QWEN3_MAX_SEQ_LENGTH
         }
     
     def load_model(self) -> None:

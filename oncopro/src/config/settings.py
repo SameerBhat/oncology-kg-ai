@@ -18,13 +18,13 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "jina")  # Default to jina
 DATABASE_NAME = EMBEDDING_MODEL  # Use model name as database name
 
 # Model-specific configurations
-JINA_MODEL_NAME = "jinaai/jina-embeddings-v4"
-JINA_MAX_SEQ_LENGTH = 8192
+JINA4_MODEL_NAME = "jinaai/jina-embeddings-v4"
+JINA4_MAX_SEQ_LENGTH = 8192
 
-QWEN_MODEL_NAME = "Qwen/Qwen3-Embedding-4B"
-QWEN_MAX_SEQ_LENGTH = 32768
+QWEN3_MODEL_NAME = "Qwen/Qwen3-Embedding-4B"
+QWEN3_MAX_SEQ_LENGTH = 32768
 
-OPENAI_MODEL_NAME = "text-embedding-3-large"
+OPENAI_MODEL_NAME = "text-embedding-3-small"
 OPENAI_MAX_SEQ_LENGTH = 8192
 
 # Hardware configuration

@@ -4,18 +4,17 @@ Factory for creating embedding models.
 from typing import List
 
 from .base import EmbeddingModel
-from .jina import JinaEmbedding
+from .jina4 import Jina4Embedding
 from .openai import OpenAIEmbedding
-from .qwen import QwenEmbedding
+from .qwen3 import Qwen3Embedding
 
 
 class EmbeddingModelFactory:
     """Factory class for creating embedding models."""
     
     _models = {
-        "jina": JinaEmbedding,
-        "qwen": QwenEmbedding,
-        "qwen3": QwenEmbedding,  # Alias
+        "jina4": Jina4Embedding,
+        "qwen3": Qwen3Embedding,
         "openai": OpenAIEmbedding,
     }
     
