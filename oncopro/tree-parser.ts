@@ -3,6 +3,10 @@ import { MongoClient, ObjectId } from "mongodb";
 import * as cheerio from "cheerio";
 import Papa from "papaparse";
 import * as fs from "node:fs";
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 export interface User {
   id: string;
@@ -52,7 +56,9 @@ export interface PayloadCategory {
  * Configuration
  * ────────────────────────────────────────────────────────────────*/
 const MONGO_URI = process.env.DATABASE_URI || "mongodb://localhost:27017";
-const DATABASE = process.env.EMBEDDING_MODEL || "jina";
+const DATABASE = process.env.EMBEDDING_MODEL || "nodbinembeddings";
+console.log(`Using MongoDB URI: ${MONGO_URI}`);
+console.log(`Using database: ${DATABASE}`);
 
 const NODES_COLLECTION = "nodes";
 const CATS_COLLECTION = "node_categories";
