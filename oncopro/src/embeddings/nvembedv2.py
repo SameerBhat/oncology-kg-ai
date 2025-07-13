@@ -39,18 +39,19 @@ class NVEmbedV2(EmbeddingModel):
     def add_eos(self, input_examples: List[str]) -> List[str]:
         """Add EOS token to input examples as required by NV-Embed-v2."""
         return [input_example + self.model.tokenizer.eos_token for input_example in input_examples]
-    
-    def encode_chunks(self, chunks: List[str], **kwargs) -> torch.Tensor:
-        """Encode text chunks into embeddings with NV-Embed-v2 specific preprocessing."""
+
+    # not using the inherited encode_chunks() method for comparison
+    def encode_chunks_optimized(self, chunks: List[str], use_instruction: bool = False, task_name: str = "example", **kwargs) -> torch.Tensor:
+        """
+        Encode text chunks with NV-Embed-v2 specific optimizations.
+        Use this method when you want optimal performance from NV-Embed-v2.
+        For fair comparison with other models, use the inherited encode_chunks() method.
+        """
         if self.model is None:
             self.load_with_retry()
         
         # Apply NV-Embed-v2 specific preprocessing
         processed_chunks = self.add_eos(chunks)
-        
-        # Extract NV-Embed-v2 specific parameters
-        use_instruction = kwargs.pop('use_instruction', False)
-        task_name = kwargs.pop('task_name', 'example')
         
         # Handle instruction prefix for queries
         if use_instruction:
@@ -72,15 +73,11 @@ class NVEmbedV2(EmbeddingModel):
             **kwargs
         )
     
-    def embed_text(self, text: str, use_instruction: bool = False, task_name: str = "example", **kwargs) -> List[float]:
+    def embed_text_optimized(self, text: str, use_instruction: bool = False, task_name: str = "example", **kwargs) -> List[float]:
         """
-        Embed text by chunking and mean pooling with optional instruction handling.
-        
-        Args:
-            text: Text to embed
-            use_instruction: Whether to treat this as a query (add instruction prefix)
-            task_name: Task name for instruction generation
-            **kwargs: Additional arguments
+        Embed text using NV-Embed-v2 optimizations (EOS tokens, instructions, normalization).
+        Use this method when you want optimal performance from NV-Embed-v2.
+        For fair comparison with other models, use the inherited embed_text() method.
         """
         # Use a simple chunking approach
         max_words = 6000  # Conservative default
@@ -90,6 +87,6 @@ class NVEmbedV2(EmbeddingModel):
             chunk = ' '.join(words[i:i + max_words])
             chunks.append(chunk)
         
-        embeddings = self.encode_chunks(chunks, use_instruction=use_instruction, task_name=task_name, **kwargs)
+        embeddings = self.encode_chunks_optimized(chunks, use_instruction=use_instruction, task_name=task_name, **kwargs)
         avg_embedding = embeddings.mean(dim=0).cpu().tolist()
         return avg_embedding
