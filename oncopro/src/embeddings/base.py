@@ -23,12 +23,21 @@ def get_device():
 class EmbeddingModel(ABC):
     """Abstract base class for embedding models."""
     
+    # Class-level configuration - override in subclasses
+    MODEL_NAME: str = None
+    MAX_SEQ_LENGTH: int = None
+    MODEL_ID: str = None  # Used for factory registration and database naming
+    
     def __init__(self, max_retries: int = DEFAULT_MAX_RETRIES, delay: int = DEFAULT_RETRY_DELAY):
         self.max_retries = max_retries
         self.delay = delay
         self.model = None
         self.device = get_device()
         print(f"Using device: {self.device}")
+        
+        # Validate that subclass defines required configuration
+        if self.MODEL_NAME is None or self.MAX_SEQ_LENGTH is None or self.MODEL_ID is None:
+            raise ValueError(f"{self.__class__.__name__} must define MODEL_NAME, MAX_SEQ_LENGTH, and MODEL_ID")
     
     @abstractmethod
     def load_model(self) -> None:
@@ -39,6 +48,21 @@ class EmbeddingModel(ABC):
     def get_model_config(self) -> Dict[str, Any]:
         """Get model-specific configuration."""
         pass
+    
+    @classmethod
+    def get_model_id(cls) -> str:
+        """Get the model identifier for factory registration."""
+        return cls.MODEL_ID
+    
+    @classmethod
+    def get_model_name(cls) -> str:
+        """Get the model name."""
+        return cls.MODEL_NAME
+    
+    @classmethod
+    def get_max_seq_length(cls) -> int:
+        """Get the maximum sequence length."""
+        return cls.MAX_SEQ_LENGTH
     
     def load_with_retry(self) -> None:
         """Load model with retry logic for handling transient errors."""

@@ -14,18 +14,8 @@ MAX_WORDS = int(MAX_TOKENS / AVG_WORDS_PER_TOKEN)
 # Database configuration
 MONGO_URI = os.getenv("DATABASE_URI", "mongodb://localhost:27017")
 # Database name is based on the embedding model being used
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "jina")  # Default to jina
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "jina4")  # Default to jina4
 DATABASE_NAME = EMBEDDING_MODEL  # Use model name as database name
-
-# Model-specific configurations
-JINA4_MODEL_NAME = "jinaai/jina-embeddings-v4"
-JINA4_MAX_SEQ_LENGTH = 8192
-
-QWEN3_MODEL_NAME = "Qwen/Qwen3-Embedding-4B"
-QWEN3_MAX_SEQ_LENGTH = 32768
-
-OPENAI_MODEL_NAME = "text-embedding-3-small"
-OPENAI_MAX_SEQ_LENGTH = 8192
 
 # Hardware configuration
 DEFAULT_MAX_RETRIES = 3
