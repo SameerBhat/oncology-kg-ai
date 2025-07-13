@@ -1,80 +1,115 @@
-# OnCoPro Embedding System
+# OncroPro Embedding System
 
 A flexible, modular embedding system that supports multiple embedding models with easy switching capabilities.
 
-## Features
+## 🚀 Quick Start
 
-- **Multiple Models**: Support for Jina AI, Qwen3, and OpenAI embeddings
-- **Easy Switching**: Change models via environment variable or function parameter
-- **Modular Design**: Clean separation of concerns for better maintainability
-- **Extensible**: Add new models easily using the factory pattern
-- **Backward Compatible**: Existing code continues to work unchanged
+1. **Install dependencies:**
 
-## Quick Start
+   ```bash
+   npm install
+   pip install -r requirements.txt
+   ```
 
-### 1. Installation
+2. **Configure environment:**
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd oncopro
+   ```bash
+   cp .env.example .env
+   # Edit .env to set EMBEDDING_MODEL and DATABASE_URI
+   ```
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+3. **Add your data:**
 
-# Install dependencies
-pip install -r requirements.txt
+   ```bash
+   # Place mindmap (.mm) and category (.csv) files in data/ directory
+   ```
+
+4. **Generate embeddings:**
+   ```bash
+   npm run convert-mm-db
+   python generate_db_embeddings.py
+   ```
+
+## 📦 Available Models
+
+- **jina4** - Jina AI embeddings v4 (8192 max tokens)
+- **qwen3** - Qwen3 embedding model (32768 max tokens)
+- **openai** - OpenAI text embeddings (8192 max tokens)
+
+Each model is self-contained with its own configuration.
+
+## 📁 Project Structure
+
+```
+├── src/                     # Source code
+│   ├── config/             # Configuration management
+│   ├── database/           # Database operations
+│   ├── embeddings/         # Embedding model implementations
+│   └── utils.py            # Utility functions
+├── tests/                  # Test files
+├── tools/                  # Utility scripts
+├── data/                   # Data files (mindmaps, CSVs)
+├── docs/                   # Documentation
+├── generate_db_embeddings.py  # Main embedding generation script
+└── tree-parser.ts          # TypeScript mindmap parser
 ```
 
-### 2. Configuration
+## 📖 Documentation
 
-Copy the example environment file and configure:
+- [Quick Start Guide](HOW_TO.md) - Step-by-step usage instructions
+- [Architecture](docs/CENTRALIZED_CONFIG.md) - Centralized configuration design
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` to set your preferred embedding model:
+## 🧪 Testing
 
 ```bash
-EMBEDDING_MODEL=jina  # Options: jina, qwen, qwen3, openai
-DATABASE_URI=mongodb://localhost:27017
+python -m pytest tests/
 ```
 
-### 3. Basic Usage
+## 🔧 Tools
 
-```python
-from src import embed_text, EmbeddingModelFactory
+- `tools/db_manager.py` - Database management and statistics
 
-# Simple embedding with default model
+## 🤝 Contributing
+
+1. Each embedding model is self-contained in `src/embeddings/`
+2. Add tests in `tests/`
+3. Update documentation as needed
+
+## 📄 License
+
+ISC
 embedding = embed_text("Your text here")
 
 # Specify model explicitly
+
 embedding = embed_text("Your text here", model_name="jina")
 
 # List available models
+
 models = EmbeddingModelFactory.list_available_models()
 print(f"Available models: {models}")
+
 ```
 
 ## Project Structure
 
 ```
+
 src/
-├── __init__.py              # Public API
-├── utils.py                 # High-level utility functions
-├── config/                  # Configuration management
-│   ├── __init__.py
-│   └── settings.py
-└── embeddings/              # Model implementations
-    ├── __init__.py
-    ├── base.py              # Abstract base class
-    ├── factory.py           # Model factory
-    ├── jina.py              # Jina AI implementation
-    ├── qwen.py              # Qwen3 implementation
-    └── openai.py            # OpenAI implementation
-```
+├── **init**.py # Public API
+├── utils.py # High-level utility functions
+├── config/ # Configuration management
+│ ├── **init**.py
+│ └── settings.py
+└── embeddings/ # Model implementations
+├── **init**.py
+├── base.py # Abstract base class
+├── factory.py # Model factory
+├── jina.py # Jina AI implementation
+├── qwen.py # Qwen3 implementation
+└── openai.py # OpenAI implementation
+
+````
 
 ## Supported Models
 
@@ -98,7 +133,7 @@ class MyCustomEmbedding(EmbeddingModel):
 # Register and use
 EmbeddingModelFactory.register_model("custom", MyCustomEmbedding)
 embedding = embed_text("test", model_name="custom")
-```
+````
 
 ## Documentation
 

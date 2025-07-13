@@ -64,3 +64,12 @@ htmlcov/
 *.mm
 **/*.mm
 node_modules
+
+# Project specific
+data/*.mm
+data/*.csv
+# Keep data directory structure but ignore actual data files
+
+# Test artifacts  
+.pytest_cache/
+tests/__pycache__/
