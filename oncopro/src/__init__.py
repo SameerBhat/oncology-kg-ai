@@ -14,7 +14,7 @@ from .embeddings import (
     EmbeddingModel,
     EmbeddingModelFactory,
     Jina4Embedding,
-    Qwen3Embedding,
+    Qwen34BEmbedding,
     OpenAIEmbedding,
     get_device,
 )
@@ -60,7 +60,7 @@ __all__ = [
     "EmbeddingModel",
     "EmbeddingModelFactory",
     "Jina4Embedding",
-    "Qwen3Embedding",
+    "Qwen34BEmbedding",
     "OpenAIEmbedding",
     
     # Database classes

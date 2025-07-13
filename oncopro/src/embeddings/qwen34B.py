@@ -8,11 +8,11 @@ from sentence_transformers import SentenceTransformer
 from .base import EmbeddingModel
 
 
-class Qwen3Embedding(EmbeddingModel):
+class Qwen34BEmbedding(EmbeddingModel):
     """Qwen3 embedding model implementation."""
     
     # Model configuration - all in one place!
-    MODEL_ID = "qwen3"
+    MODEL_ID = "qwen34b"
     MODEL_NAME = "Qwen/Qwen3-Embedding-4B"
     MAX_SEQ_LENGTH = 32768
     

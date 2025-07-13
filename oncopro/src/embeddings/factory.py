@@ -6,14 +6,14 @@ from typing import List, Dict, Type
 from .base import EmbeddingModel
 from .jina4 import Jina4Embedding
 from .openai import OpenAIEmbedding
-from .qwen3 import Qwen3Embedding
+from .qwen34B import Qwen34BEmbedding
 
 
 class EmbeddingModelFactory:
     """Factory class for creating embedding models."""
     
     # Auto-discover models from imported classes
-    _model_classes = [Jina4Embedding, Qwen3Embedding, OpenAIEmbedding]
+    _model_classes = [Jina4Embedding, Qwen34BEmbedding, OpenAIEmbedding]
     
     @classmethod
     def _get_models_registry(cls) -> Dict[str, Type[EmbeddingModel]]:
