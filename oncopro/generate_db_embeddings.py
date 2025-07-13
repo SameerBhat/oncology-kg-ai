@@ -5,6 +5,7 @@ This script processes all nodes without embeddings and adds them using the confi
 """
 
 import logging
+import sys
 
 from src import (
     embed_text,
@@ -13,12 +14,18 @@ from src import (
     EMBEDDING_MODEL,
 )
 from src.embedding_utils import setup_logging, ProgressTracker, log_embedding_stats
+from src.validation import run_pre_embedding_checks
 
 
 def main() -> None:
     """Main function to generate embeddings for nodes without them."""
     # Set up logging
     setup_logging()
+    
+    # Run pre-embedding validation checks
+    if not run_pre_embedding_checks():
+        logging.error("Validation checks failed. Exiting.")
+        sys.exit(1)
     
     # Log which model we're using
     logging.info(f"Using embedding model: {EMBEDDING_MODEL}")

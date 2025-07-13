@@ -40,6 +40,12 @@ from .config import (
     EMBEDDING_MODEL,
 )
 
+from .validation import (
+    validate_embedding_model,
+    validate_database_exists,
+    run_pre_embedding_checks,
+)
+
 __all__ = [
     # Main functions
     "embed_text",
@@ -77,4 +83,9 @@ __all__ = [
     "MONGO_URI",
     "DATABASE_NAME",
     "EMBEDDING_MODEL",
+    
+    # Validation functions
+    "validate_embedding_model",
+    "validate_database_exists", 
+    "run_pre_embedding_checks",
 ]
