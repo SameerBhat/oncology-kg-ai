@@ -4,7 +4,7 @@
   "description": "A flexible, modular embedding system that supports multiple embedding models with easy switching capabilities.",
   "type": "module",
   "scripts": {
-    "start": "tsx tree-parser.ts uberblick-solide-tumoren-16012025-heytens-aktuell.mm category.csv"
+    "convert-mm-db": "tsx tree-parser.ts uberblick-solide-tumoren-16012025-heytens-aktuell.mm category.csv"
   },
   "keywords": [],
   "author": "",

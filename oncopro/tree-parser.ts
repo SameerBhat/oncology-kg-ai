@@ -68,6 +68,11 @@ export interface AttributeArrayInterface {
   value: string;
 }
 
+function htmlToText(html: string): string {
+  const $ = cheerio.load(html);
+  return $.text().replace(/\s+/g, " ").trim();
+}
+
 /**
  * Raw parse-time context (before DB insert)
  */
@@ -76,7 +81,7 @@ interface NodeContext {
   freemindID: string;
   parentFreemindID: string | null;
   text: string | null;
-  richContent: string;
+  // richContent: string;
   richText: string;
   notes: string;
   nodeBgColor: string | null;
@@ -109,14 +114,14 @@ export interface NodeDocForInsert {
   linkedNodes: ObjectId[];
   children: ObjectId[];
   text: string;
-  richContent: string;
+  // richContent: string;
   richText: string;
   notes: string;
   links: string[];
   font: Record<string, any>;
   cloud: Record<string, any>;
   attributes: AttributeArrayInterface[];
-  category: ObjectId | null;
+  category: string | null;
   icons: ObjectId[];
   createdAt: string;
   updatedAt: string;
@@ -202,7 +207,7 @@ function parseXmlFile(filePath: string): Promise<{
             freemindID: fmID,
             parentFreemindID: parent ? parent.freemindID : null,
             text,
-            richContent: "",
+            // richContent: "",
             richText: "",
             notes: "",
             nodeBgColor: bg,
@@ -271,7 +276,7 @@ function parseXmlFile(filePath: string): Promise<{
 
         if (S.captureRich) {
           const $ = cheerio.load(S.richBuffer, { xmlMode: true });
-          node.richContent = $.root().html()?.replace(/\s+/g, " ").trim() || "";
+          // node.richContent = $.root().html()?.replace(/\s+/g, " ").trim() || "";
           node.richText = $("body").text()?.replace(/\s+/g, " ").trim() || "";
           S.captureRich = false;
         } else if (S.captureNote) {
@@ -424,6 +429,10 @@ async function storeInMongo(
         ? color2Cat.get(colorMap[n.nodeBgColor]?.finalColor ?? n.nodeBgColor) ||
           null
         : null;
+    const categoryName =
+      n.nodeBgColor && colorMap[n.nodeBgColor]
+        ? colorMap[n.nodeBgColor].title
+        : undefined;
 
     const iconIDs = (n.icons || [])
       .map((name) => iconMap.get(name))
@@ -432,6 +441,8 @@ async function storeInMongo(
       ...(parentToChildren.get(n._id.toHexString()) || []),
       ...(n.linkedNodes || []),
     ];
+
+    const notesCleaned = htmlToText(n.notes);
 
     return {
       _id: n._id,
@@ -442,14 +453,14 @@ async function storeInMongo(
       linkedNodes: n.linkedNodes ?? [],
       children: childIDs,
       text: n.text?.trim() || "",
-      richContent: n.richContent,
+      // richContent: n.richContent,
       richText: n.text?.trim() ? "" : n.richText,
-      notes: n.notes,
+      notes: notesCleaned,
       links: n.links,
       font: n.font || {},
       cloud: n.cloud || {},
       attributes: n.attributes || [],
-      category: catID,
+      category: categoryName,
       icons: iconIDs,
       createdAt: nowISO,
       updatedAt: nowISO,
