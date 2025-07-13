@@ -2,6 +2,7 @@
 Utility functions for embedding generation operations.
 """
 import logging
+import time
 from typing import Optional
 
 
@@ -61,7 +62,7 @@ def log_embedding_stats(stats: dict) -> None:
 
 
 class ProgressTracker:
-    """Track and log progress of long-running operations."""
+    """Track and log progress of long-running operations with time-based metrics."""
     
     def __init__(self, total: int, item_name: str = "items", log_interval: int = 100):
         """
@@ -77,10 +78,11 @@ class ProgressTracker:
         self.log_interval = log_interval
         self.processed = 0
         self.errors = 0
+        self.start_time = time.time()
         
     def update(self, increment: int = 1) -> None:
         """
-        Update progress counter.
+        Update progress counter and log detailed progress with timing.
         
         Args:
             increment: Number of items processed in this update
@@ -88,7 +90,58 @@ class ProgressTracker:
         self.processed += increment
         
         if self.processed % self.log_interval == 0 or self.processed == self.total:
-            log_progress(self.processed, self.total, self.item_name)
+            self._log_detailed_progress()
+    
+    def _log_detailed_progress(self) -> None:
+        """Log detailed progress with timing information."""
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+        
+        # Calculate metrics
+        remaining_items = self.total - self.processed
+        percentage = (self.processed / self.total * 100) if self.total > 0 else 0
+        
+        # Time calculations
+        avg_time_per_item = elapsed_time / self.processed if self.processed > 0 else 0
+        estimated_remaining_time = avg_time_per_item * remaining_items
+        
+        # Speed calculation (items per second)
+        speed = self.processed / elapsed_time if elapsed_time > 0 else 0
+        
+        # Format time strings
+        elapsed_str = self._format_time(elapsed_time)
+        remaining_str = self._format_time(estimated_remaining_time)
+        
+        logging.info(
+            "Progress: %d/%d %s (%.1f%%) | "
+            "Speed: %.2f %s/sec | "
+            "Avg: %.2fs/%s | "
+            "Elapsed: %s | "
+            "ETA: %s",
+            self.processed,
+            self.total,
+            self.item_name,
+            percentage,
+            speed,
+            self.item_name,
+            avg_time_per_item,
+            self.item_name.rstrip('s'),  # Remove 's' for singular form
+            elapsed_str,
+            remaining_str
+        )
+    
+    def _format_time(self, seconds: float) -> str:
+        """Format time in a human-readable format."""
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{minutes}m {secs}s"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
     
     def add_error(self) -> None:
         """Increment error counter."""
@@ -109,9 +162,16 @@ class ProgressTracker:
         }
     
     def log_final_summary(self) -> None:
-        """Log final processing summary."""
+        """Log final processing summary with total time taken."""
         summary = self.get_summary()
-        logging.info(f"✅ Finished processing {summary['processed']} {self.item_name}")
+        total_time = time.time() - self.start_time
+        total_time_str = self._format_time(total_time)
+        
+        logging.info(f"✅ Finished processing {summary['processed']} {self.item_name} in {total_time_str}")
         if summary['errors'] > 0:
             logging.warning(f"⚠️  {summary['errors']} errors occurred during processing")
             logging.info(f"Success rate: {summary['success_rate']:.2f}%")
+        
+        # Final speed calculation
+        avg_speed = summary['processed'] / total_time if total_time > 0 else 0
+        logging.info(f"Average speed: {avg_speed:.2f} {self.item_name}/sec")

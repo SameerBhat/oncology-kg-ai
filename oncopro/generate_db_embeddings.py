@@ -5,7 +5,6 @@ This script processes all nodes without embeddings and adds them using the confi
 """
 
 import logging
-from tqdm import tqdm
 
 from src import (
     embed_text,
@@ -38,15 +37,15 @@ def main() -> None:
             logging.info("✅ All nodes already have embeddings!")
             return
         
-        # Initialize progress tracking
-        progress = ProgressTracker(total_nodes, "nodes", log_interval=100)
+        # Initialize progress tracking (log every 10 nodes for better feedback)
+        progress = ProgressTracker(total_nodes, "nodes", log_interval=10)
         
         # Process nodes without embeddings
         logging.info(f"Starting to process {total_nodes} nodes without embeddings...")
         
         nodes_iterator = nodes_manager.find_nodes_without_embeddings()
         
-        for node in tqdm(nodes_iterator, total=total_nodes, desc="Embedding nodes"):
+        for node in nodes_iterator:
             try:
                 # Generate text content from the node
                 input_text = node.generate_text_content()
