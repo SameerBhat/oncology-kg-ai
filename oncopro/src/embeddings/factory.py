@@ -9,13 +9,14 @@ from .openai import OpenAIEmbedding
 from .qwen34B import Qwen34BEmbedding
 from .nvembedv2 import NVEmbedV2
 from .bgem3 import BGEM3Embedding
+from .mpnetbase2 import MPNetBase2Embedding
 
 
 class EmbeddingModelFactory:
     """Factory class for creating embedding models."""
     
     # Auto-discover models from imported classes
-    _model_classes = [Jina4Embedding, Qwen34BEmbedding, OpenAIEmbedding, NVEmbedV2, BGEM3Embedding]
+    _model_classes = [Jina4Embedding, Qwen34BEmbedding, OpenAIEmbedding, NVEmbedV2, BGEM3Embedding, MPNetBase2Embedding]
     
     @classmethod
     def _get_models_registry(cls) -> Dict[str, Type[EmbeddingModel]]:
