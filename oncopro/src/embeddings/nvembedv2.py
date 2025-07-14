@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 from .base import EmbeddingModel
 
-
+# Since this is not multilingual, we cant use it for now, and it also is not working atm. We can use it maybe later.
 class NVEmbedV2(EmbeddingModel):
     """NVIDIA NV-Embed-v2 embedding model implementation."""
     
