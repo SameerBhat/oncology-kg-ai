@@ -29,28 +29,28 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 resource "aws_security_group" "main_sg" {
   name        = "mongo-emb-sg"
   description = "Allow SSH and custom ports"
-  ingress = [
-    {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
-  egress = [
-    {
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
+  
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH access"
+  }
+  
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "All outbound traffic"
+  }
 }
 
 resource "aws_launch_template" "mongo_emb_lt" {
   name = "mongo-emb-lt"
 
-  image_id      = "ami-xxxxxx" # Replace with valid Deep Learning AMI in ap-south-1
+  image_id      = "ami-00483f0e3d9f1eeda" 
   instance_type = "g4dn.xlarge"
 
   key_name = aws_key_pair.main.key_name
