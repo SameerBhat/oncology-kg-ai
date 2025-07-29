@@ -152,7 +152,7 @@ pip install --upgrade pip setuptools wheel
 
 # Step 1: Install PyTorch first
 log_info "Installing PyTorch..."
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu120
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Install Python dependencies
 log_info "Installing Python dependencies..."
@@ -173,28 +173,28 @@ else
 fi
 
 # Set up environment configuration
-log_info "Setting up environment configuration..."
-if [ -f ".env.example" ]; then
-    cp .env.example .env
-    log_success "Environment configuration created from .env.example"
-    log_info "Please edit .env file to configure your specific settings"
-else
-    log_warning ".env.example not found. Creating basic .env file..."
-    cat > .env << EOF
+# log_info "Setting up environment configuration..."
+# if [ -f ".env.example" ]; then
+#     cp .env.example .env
+#     log_success "Environment configuration created from .env.example"
+#     log_info "Please edit .env file to configure your specific settings"
+# else
+#     log_warning ".env.example not found. Creating basic .env file..."
+#     cat > .env << EOF
 # Environment variables for embedding configuration
 
-# Choose your embedding model: jina4, qwen3, openai
-EMBEDDING_MODEL=jina4
+# # Choose your embedding model: jina4, qwen3, openai
+# EMBEDDING_MODEL=jina4
 
-# MongoDB configuration
-DATABASE_URI=mongodb://localhost:27017
+# # MongoDB configuration
+# DATABASE_URI=mongodb://localhost:27017
 
-# Optional configuration
-# EMBEDDING_BATCH_SIZE=32
-# EMBEDDING_DEVICE=auto
-EOF
-    log_success "Basic .env file created"
-fi
+# # Optional configuration
+# # EMBEDDING_BATCH_SIZE=32
+# # EMBEDDING_DEVICE=auto
+# EOF
+#     log_success "Basic .env file created"
+# fi
 
 # Create data directory if it doesn't exist
 log_info "Creating data directory..."
@@ -336,9 +336,8 @@ echo ""
 echo -e "${YELLOW}Next Steps:${NC}"
 echo "1. Copy your mindmap (.mm) and category (.csv) files to $PROJECT_DIR/data/"
 echo "2. Edit $PROJECT_DIR/.env to configure your embedding model and settings"
-echo "3. Run: oncopro convert    # Convert mindmap to database"
-echo "4. Run: oncopro start      # Generate embeddings"
-echo "5. Use: oncopro shell      # Open development environment"
+echo "3. Run: source venv/bin/activate to activate the virtual environment"
+echo "3. Run: python3 generate_db_embeddings.py to generate embeddings"
 echo ""
 echo -e "${GREEN}Setup completed successfully! 🎉${NC}"
 

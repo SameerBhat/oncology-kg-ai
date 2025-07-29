@@ -88,4 +88,4 @@ python -m pytest tests/
 - Place mindmap file in `data/` directory
 - Set `EMBEDDING_MODEL` in `.env`
 - Run: `npm run convert-mm-db`
-- Run: `python generate_db_embeddings.py`
+- Run: `python3 generate_db_embeddings.py`
