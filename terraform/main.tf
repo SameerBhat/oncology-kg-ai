@@ -47,10 +47,6 @@ resource "aws_security_group" "main_sg" {
   ]
 }
 
-data "template_file" "user_data" {
-  template = file("userdata.sh")
-}
-
 resource "aws_launch_template" "mongo_emb_lt" {
   name = "mongo-emb-lt"
 
@@ -82,5 +78,5 @@ resource "aws_launch_template" "mongo_emb_lt" {
 
   security_group_names = [aws_security_group.main_sg.name]
 
-  user_data = base64encode(data.template_file.user_data.rendered)
+  user_data = base64encode(file("userdata.sh"))
 }
