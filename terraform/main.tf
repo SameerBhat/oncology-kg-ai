@@ -80,3 +80,16 @@ resource "aws_launch_template" "mongo_emb_lt" {
 
   user_data = base64encode(file("userdata.sh"))
 }
+
+resource "aws_instance" "spot_instance" {
+  launch_template {
+    id      = aws_launch_template.mongo_emb_lt.id
+    version = "$Latest"
+  }
+
+  tags = {
+    Name        = "mongo-embedding-spot"
+    Environment = "development"
+    Purpose     = "embedding-generation"
+  }
+}

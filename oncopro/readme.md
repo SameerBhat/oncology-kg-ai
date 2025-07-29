@@ -171,3 +171,5 @@ pip freeze > requirements.txt
 ## License
 
 MIT License
+python generate_db_embeddings.py
+npm run convert-mm-db

@@ -54,6 +54,11 @@ class EmbeddingModelFactory:
         return list(cls._get_models_registry().keys())
     
     @classmethod
+    def list_available_model_names(cls) -> List[str]:
+        """List all available model names (actual model identifiers)."""
+        return [model_cls.MODEL_NAME for model_cls in cls._model_classes]
+    
+    @classmethod
     def get_model_info(cls, model_name: str) -> Dict[str, str]:
         """Get information about a specific model."""
         models = cls._get_models_registry()
