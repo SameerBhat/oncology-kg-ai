@@ -48,10 +48,9 @@ resource "aws_security_group" "main_sg" {
 }
 
 resource "aws_launch_template" "nvembedv2-mongo_emb_lt" {
-  name = "mongo-emb-lt"
-
+  name = "nvembedv2-mongo-emb-lt"
   image_id      = "ami-00483f0e3d9f1eeda" 
-  instance_type = "g4dn.8xlarge"
+  instance_type = "g4dn.2xlarge"
 
   key_name = aws_key_pair.main.key_name
 

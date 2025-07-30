@@ -32,3 +32,10 @@ g4dn.16xlarge
 
 Pricing entry-level: available at ~ $3176.96/month on-demand (~$4.40/hr). Spot likely around $2–3/hr, as per upward scaling trends
 Azure, AWS and GCP Specs and Pricing
+
+
+aws ec2 describe-spot-price-history \
+--instance-types g4dn.xlarge g4dn.2xlarge g4dn.4xlarge g4dn.8xlarge g4dn.12xlarge g4dn.16xlarge g4dn.metal \
+--product-descriptions "Linux/UNIX" \
+--start-time "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+--region ap-south-1
