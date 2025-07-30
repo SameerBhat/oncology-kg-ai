@@ -3,12 +3,12 @@ provider "aws" {
 }
 
 resource "aws_key_pair" "main" {
-  key_name   = "mumbai"
+  key_name   = "nvembedv2"
   public_key = file("~/.ssh/id_rsa.pub") 
 }
 
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2-spot-embedding"
+  name = "ec2-spot-embedding-nvembedv2"
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
@@ -22,7 +22,7 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "ec2-spot-embedding"
+  name = "ec2-spot-embedding-nvembedv2"
   role = aws_iam_role.ec2_role.name
 }
 
@@ -47,7 +47,7 @@ resource "aws_security_group" "main_sg" {
   }
 }
 
-resource "aws_launch_template" "mongo_emb_lt" {
+resource "aws_launch_template" "nvembedv2-mongo_emb_lt" {
   name = "mongo-emb-lt"
 
   image_id      = "ami-00483f0e3d9f1eeda" 
@@ -83,12 +83,12 @@ resource "aws_launch_template" "mongo_emb_lt" {
 
 resource "aws_instance" "spot_instance" {
   launch_template {
-    id      = aws_launch_template.mongo_emb_lt.id
+    id      = aws_launch_template.nvembedv2-mongo_emb_lt.id
     version = "$Latest"
   }
 
   tags = {
-    Name        = "mongo-embedding-spot"
+    Name        = "nvembedv2-mongo-embedding-spot"
     Environment = "development"
     Purpose     = "embedding-generation"
   }

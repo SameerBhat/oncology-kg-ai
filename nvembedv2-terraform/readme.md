@@ -1,3 +1,6 @@
+terraform init
+terraform apply
+
 Step 1
 ssh ubuntu@13.201.184.42
 
