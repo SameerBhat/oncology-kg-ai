@@ -27,7 +27,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 resource "aws_security_group" "main_sg" {
-  name        = "mongo-emb-sg"
+  name        = "nvembedv2-mongo-emb-sg"
   description = "Allow SSH and custom ports"
   
   ingress {
@@ -51,7 +51,7 @@ resource "aws_launch_template" "nvembedv2-mongo_emb_lt" {
   name = "mongo-emb-lt"
 
   image_id      = "ami-00483f0e3d9f1eeda" 
-  instance_type = "g4dn.xlarge"
+  instance_type = "g4dn.8xlarge"
 
   key_name = aws_key_pair.main.key_name
 
