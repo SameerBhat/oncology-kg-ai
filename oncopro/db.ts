@@ -12,9 +12,9 @@ dotenv.config();
 const program = new Command();
 
 // Hardcoded MongoDB URIs
-const localUri = "mongodb://localhost:27017/bgem3";
+const localUri = "mongodb://localhost:27017/jina4";
 const prodUri =
-  process.env.PROD_DATABASE_URI + "/bgem3" ||
+  process.env.PROD_DATABASE_URI + "/jina4" ||
   "mongodb://localhost:27017/myProdDB";
 
 console.log(`Using prod URI: ${prodUri}`);
