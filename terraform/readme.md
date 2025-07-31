@@ -18,7 +18,7 @@ rsync -av \
 cd oncopro
 chmod +x setup.sh
 Step 3: run setup.sh script
-
+cd /home/ubuntu/oncopro
 activate the venv
 source venv/bin/activate
 
@@ -33,3 +33,8 @@ screen -S embeddings
 python3 generate_db_embeddings.py
 resume
 screen -r embeddings
+
+until python3 generate_db_embeddings.py; do
+echo "Command failed. Retrying in 5 seconds..."
+sleep 5
+done

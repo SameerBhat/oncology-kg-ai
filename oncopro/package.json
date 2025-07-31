@@ -4,13 +4,15 @@
   "description": "A flexible, modular embedding system that supports multiple embedding models with easy switching capabilities.",
   "type": "module",
   "scripts": {
-    "convert-mm-db": "tsx tree-parser.ts data/uberblick-solide-tumoren-16012025-heytens-aktuell.mm data/category.csv"
+    "convert-mm-db": "tsx tree-parser.ts data/uberblick-solide-tumoren-16012025-heytens-aktuell.mm data/category.csv",
+    "sync-db": "tsx db.ts sync"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.1.0",
+    "commander": "^14.0.0",
     "dotenv": "^17.2.0",
     "mongodb": "^6.17.0",
     "papaparse": "^5.5.3",

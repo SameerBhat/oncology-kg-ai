@@ -11,6 +11,9 @@ importers:
       cheerio:
         specifier: ^1.1.0
         version: 1.1.0
+      commander:
+        specifier: ^14.0.0
+        version: 14.0.0
       dotenv:
         specifier: ^17.2.0
         version: 17.2.0
@@ -214,6 +217,10 @@ packages:
   cheerio@1.1.0:
     resolution: {integrity: sha512-+0hMx9eYhJvWbgpKV9hN7jg0JcwydpopZE4hgi+KvQtByZXPp04NiCWU0LzcAbP63abZckIHkTQaXVF52mX3xQ==}
     engines: {node: '>=18.17'}
+
+  commander@14.0.0:
+    resolution: {integrity: sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==}
+    engines: {node: '>=20'}
 
   css-select@5.2.2:
     resolution: {integrity: sha512-TizTzUddG/xYLA3NXodFM0fSbNizXjOKhqiQQwvhlspadZokn1KDy0NZFS0wuEubIYAV5/c1/lAr0TaaFXEXzw==}
@@ -486,6 +493,8 @@ snapshots:
       parse5-parser-stream: 7.1.2
       undici: 7.11.0
       whatwg-mimetype: 4.0.0
+
+  commander@14.0.0: {}
 
   css-select@5.2.2:
     dependencies:

@@ -8,3 +8,4 @@ terraform.tfstate
 **/*.tfstate.backup
 **/**/.tfstate
 *.tfvars
+backup_databases

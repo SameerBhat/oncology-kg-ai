@@ -2,12 +2,13 @@ terraform init
 terraform apply
 
 Step 1
-ssh ubuntu@13.201.184.42
+ssh ubuntu@13.204.64.230
 
+cd /home/ubuntu/oncopro
 activate the venv
 source venv/bin/activate
 
-<!-- scp -r ./oncopro ubuntu@13.201.184.42:~/oncopro -->
+<!-- scp -r ./oncopro ubuntu@13.204.64.230:~/oncopro -->
 
 Step 2: copy the project
 rsync -av \
@@ -16,7 +17,7 @@ rsync -av \
  --exclude='node_modules/' \
  --exclude='venv/' \
  --exclude='data/uberblick-solide-tumoren-16012025-heytens-aktuell.mm' \
- ./oncopro/ ubuntu@13.201.184.42:~/oncopro
+ ./oncopro/ ubuntu@13.204.64.230:~/oncopro
 
 cd oncopro
 chmod +x setup.sh
