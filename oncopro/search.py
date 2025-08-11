@@ -67,9 +67,33 @@ def main() -> None:
                         
                         for i, result in enumerate(results, 1):
                             print(f"{i}. Score: {result['score']:.4f}")
-                            print(f"   Content: {result['content'][:200]}...")
-                            if result.get('metadata'):
-                                print(f"   Metadata: {result['metadata']}")
+                            print(f"   ID: {result['_id']}")
+                            
+                            # Display text content
+                            text = result.get('text', '')
+                            if text:
+                                print(f"   Text: {text[:200]}..." if len(text) > 200 else f"   Text: {text}")
+                            
+                            # Display rich text content  
+                            rich_text = result.get('richText', '')
+                            if rich_text:
+                                print(f"   Rich Text: {rich_text[:100]}..." if len(rich_text) > 100 else f"   Rich Text: {rich_text}")
+                            
+                            # Display notes
+                            notes = result.get('notes', '')
+                            if notes:
+                                print(f"   Notes: {notes[:150]}..." if len(notes) > 150 else f"   Notes: {notes}")
+                            
+                            # Display links
+                            links = result.get('links', [])
+                            if links:
+                                print(f"   Links: {links}")
+                            
+                            # Display attributes
+                            attributes = result.get('attributes', {})
+                            if attributes:
+                                print(f"   Attributes: {attributes}")
+                            
                             print()
                 
                 except ValueError:

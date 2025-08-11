@@ -69,6 +69,41 @@ class SearchManager:
         logger.info(f"Search stats: {stats}")
         return stats
     
+    def _generate_display_content(self, node: Dict[str, Any]) -> str:
+        """
+        Generate a combined content string for display purposes.
+        
+        Args:
+            node: Node data dictionary
+            
+        Returns:
+            Combined content string
+        """
+        content_parts = []
+        
+        # Add text if available
+        text = node.get("text", "").strip()
+        if text:
+            content_parts.append(f"Text: {text}")
+        
+        # Add notes if available
+        notes = node.get("notes", "").strip()
+        if notes:
+            content_parts.append(f"Notes: {notes}")
+        
+        # Add rich text if available (but truncated since it might be HTML)
+        rich_text = node.get("richText", "").strip()
+        if rich_text:
+            # Truncate rich text since it might contain HTML
+            truncated_rich = rich_text[:100] + "..." if len(rich_text) > 100 else rich_text
+            content_parts.append(f"Rich Text: {truncated_rich}")
+        
+        # Combine all parts
+        if content_parts:
+            return " | ".join(content_parts)
+        else:
+            return "[No text content available]"
+    
     def _preprocess_query(self, query: str) -> str:
         """
         Preprocess query based on model-specific requirements.
@@ -157,7 +192,7 @@ class SearchManager:
             # Get all nodes with embeddings
             nodes_with_embeddings = list(self.collection.find(
                 {"embedding": {"$exists": True}},
-                {"_id": 1, "embedding": 1, "content": 1, "metadata": 1}
+                {"_id": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
             ))
             
             if not nodes_with_embeddings:
@@ -176,8 +211,11 @@ class SearchManager:
                     node_embeddings.append(embedding)
                     node_data.append({
                         "_id": str(node["_id"]),
-                        "content": node.get("content", ""),
-                        "metadata": node.get("metadata", {})
+                        "text": node.get("text", ""),
+                        "richText": node.get("richText", ""),
+                        "notes": node.get("notes", ""),
+                        "links": node.get("links", []),
+                        "attributes": node.get("attributes", {})
                     })
             
             if not node_embeddings:
@@ -194,13 +232,19 @@ class SearchManager:
             scored_results = []
             for i, (node, score) in enumerate(zip(node_data, similarities)):
                 if score >= threshold:
-                    scored_results.append({
+                    result = {
                         "_id": node["_id"],
-                        "content": node["content"],
-                        "metadata": node["metadata"],
+                        "text": node["text"],
+                        "richText": node["richText"],
+                        "notes": node["notes"],
+                        "links": node["links"],
+                        "attributes": node["attributes"],
                         "score": float(score),
                         "model_used": self.embedding_model_name
-                    })
+                    }
+                    # Add display content for easier access
+                    result["display_content"] = self._generate_display_content(node)
+                    scored_results.append(result)
             
             # Sort by score in descending order and return top_k
             scored_results.sort(key=lambda x: x["score"], reverse=True)
@@ -243,7 +287,7 @@ class SearchManager:
             from bson import ObjectId
             reference_node = self.collection.find_one(
                 {"_id": ObjectId(node_id), "embedding": {"$exists": True}},
-                {"embedding": 1, "content": 1}
+                {"embedding": 1, "text": 1}
             )
             
             if not reference_node:
@@ -261,7 +305,7 @@ class SearchManager:
             
             nodes_with_embeddings = list(self.collection.find(
                 filter_query,
-                {"_id": 1, "embedding": 1, "content": 1, "metadata": 1}
+                {"_id": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
             ))
             
             if not nodes_with_embeddings:
@@ -277,8 +321,11 @@ class SearchManager:
                     node_embeddings.append(embedding)
                     node_data.append({
                         "_id": str(node["_id"]),
-                        "content": node.get("content", ""),
-                        "metadata": node.get("metadata", {})
+                        "text": node.get("text", ""),
+                        "richText": node.get("richText", ""),
+                        "notes": node.get("notes", ""),
+                        "links": node.get("links", []),
+                        "attributes": node.get("attributes", {})
                     })
             
             if not node_embeddings:
@@ -290,13 +337,19 @@ class SearchManager:
             # Create and sort results
             scored_results = []
             for node, score in zip(node_data, similarities):
-                scored_results.append({
+                result = {
                     "_id": node["_id"],
-                    "content": node["content"],
-                    "metadata": node["metadata"],
+                    "text": node["text"],
+                    "richText": node["richText"],
+                    "notes": node["notes"],
+                    "links": node["links"],
+                    "attributes": node["attributes"],
                     "score": float(score),
                     "model_used": self.embedding_model_name
-                })
+                }
+                # Add display content for easier access
+                result["display_content"] = self._generate_display_content(node)
+                scored_results.append(result)
             
             scored_results.sort(key=lambda x: x["score"], reverse=True)
             return scored_results[:top_k]

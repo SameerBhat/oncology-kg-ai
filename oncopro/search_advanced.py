@@ -29,13 +29,34 @@ def print_search_results(results: List[Dict[str, Any]], show_content_length: int
         print(f"\n{i}. Score: {result['score']:.4f} | Model: {result.get('model_used', 'unknown')}")
         print(f"   ID: {result['_id']}")
         
-        content = result.get('content', '')
-        if len(content) > show_content_length:
-            content = content[:show_content_length] + "..."
-        print(f"   Content: {content}")
+        # Display text content
+        text = result.get('text', '')
+        if text:
+            display_text = text[:show_content_length] + "..." if len(text) > show_content_length else text
+            print(f"   Text: {display_text}")
         
-        if result.get('metadata'):
-            print(f"   Metadata: {json.dumps(result['metadata'], indent=6)}")
+        # Display rich text content  
+        rich_text = result.get('richText', '')
+        if rich_text:
+            display_rich = rich_text[:100] + "..." if len(rich_text) > 100 else rich_text
+            print(f"   Rich Text: {display_rich}")
+        
+        # Display notes
+        notes = result.get('notes', '')
+        if notes:
+            display_notes = notes[:150] + "..." if len(notes) > 150 else notes
+            print(f"   Notes: {display_notes}")
+        
+        # Display links
+        links = result.get('links', [])
+        if links:
+            print(f"   Links: {links}")
+        
+        # Display attributes
+        attributes = result.get('attributes', {})
+        if attributes:
+            print(f"   Attributes: {json.dumps(attributes, indent=6)}")
+            
         print("-" * 40)
 
 

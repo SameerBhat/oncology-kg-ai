@@ -50,8 +50,21 @@ def demo_search_with_current_model():
                 if results:
                     for i, result in enumerate(results, 1):
                         print(f"  {i}. Score: {result['score']:.3f}")
-                        content = result['content'][:100] + "..." if len(result['content']) > 100 else result['content']
-                        print(f"     Content: {content}")
+                        
+                        # Show the first available content field
+                        content = ""
+                        if result.get('text'):
+                            content = result['text']
+                        elif result.get('richText'):
+                            content = result['richText']
+                        elif result.get('notes'):
+                            content = result['notes']
+                        
+                        if content:
+                            display_content = content[:100] + "..." if len(content) > 100 else content
+                            print(f"     Content: {display_content}")
+                        else:
+                            print(f"     Content: [No text content]")
                 else:
                     print("  No results found.")
                     
