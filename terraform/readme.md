@@ -38,3 +38,10 @@ until python3 generate_db_embeddings.py; do
 echo "Command failed. Retrying in 5 seconds..."
 sleep 5
 done
+
+mv jina4-2025-07-31T19-42-33.483Z-prod.archive jina4-2025-07-31T19-42-33.483Z-prod.archive.gz
+gunzip jina4-2025-07-31T19-42-33.483Z-prod.archive.gz
+
+mongorestore --host "localhost" --port "27017" \
+ --archive="jina4-2025-07-31T19-42-33.483Z-prod.archive" \
+ --nsFrom="jina4._" --nsTo="jina4._" --drop

@@ -17,8 +17,16 @@ from .nomicv2 import NomicV2Embedding
 class EmbeddingModelFactory:
     """Factory class for creating embedding models."""
     
-    # Auto-discover models from imported classes
-    _model_classes = [Jina4Embedding, Qwen34BEmbedding, OpenAIEmbedding, NVEmbedV2, BGEM3Embedding, MPNetBase2Embedding, GTEMultilingualBaseEmbedding, NomicV2Embedding]
+    # Auto-discover models from imported classes, N
+    _model_classes = [
+        Jina4Embedding, Qwen34BEmbedding, BGEM3Embedding, GTEMultilingualBaseEmbedding,
+
+
+       MPNetBase2Embedding, ## don know
+        NomicV2Embedding, # didnt try I guess, 768 dimensions, -----------
+        NVEmbedV2, # very heavy model, dimensions were 4096, couldnt handle it
+        OpenAIEmbedding # paid
+    ]
     
     @classmethod
     def _get_models_registry(cls) -> Dict[str, Type[EmbeddingModel]]:
