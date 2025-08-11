@@ -32,6 +32,10 @@ from .database import (
     NodeDocument,
 )
 
+from .search import (
+    SearchManager,
+)
+
 from .config import (
     MAX_TOKENS,
     MAX_WORDS,
@@ -67,6 +71,9 @@ __all__ = [
     "MongoDBClient",
     "NodesManager",
     "NodeDocument",
+    
+    # Search classes
+    "SearchManager",
     
     # Utility functions
     "setup_logging",
