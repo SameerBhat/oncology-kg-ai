@@ -122,7 +122,7 @@ def generate_answers_for_questions(
     questions_manager: QuestionsManager,
     answers_manager: AnswersManager,
     search_manager: SearchManager,
-    top_k: int = 5,
+    top_k: int = 10,
     threshold: float = 0.0
 ) -> Dict[str, int]:
     """
@@ -155,7 +155,7 @@ def generate_answers_for_questions(
     errors = 0
     
     for question in questions:
-        question_id = str(question['_id'])
+        question_id = question['_id']  # Keep as ObjectId
         question_de = question.get('question_de', '').strip()
         question_en = question.get('question_en', '').strip()
         

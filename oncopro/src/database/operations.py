@@ -2,9 +2,10 @@
 Database operations for managing nodes and embeddings.
 """
 import logging
-from typing import Iterator, Optional, List, Dict, Any
+from typing import Iterator, Optional, List, Dict, Any, Union
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
+from bson import ObjectId
 
 from .client import MongoDBClient
 from .models import NodeDocument
@@ -395,17 +396,21 @@ class AnswersManager:
             self._collection = self.client.get_collection(self.collection_name)
         return self._collection
     
-    def answer_exists(self, question_id: str, model_name: str) -> bool:
+    def answer_exists(self, question_id: Union[str, ObjectId], model_name: str) -> bool:
         """
         Check if an answer already exists for a given question and model.
         
         Args:
-            question_id: ID of the question
+            question_id: ID of the question (can be string or ObjectId)
             model_name: Name of the embedding model
             
         Returns:
             True if answer exists, False otherwise
         """
+        # Convert string to ObjectId if needed
+        if isinstance(question_id, str):
+            question_id = ObjectId(question_id)
+            
         query = {
             "question_id": question_id,
             "model_name": model_name
@@ -413,18 +418,22 @@ class AnswersManager:
         
         return self.collection.count_documents(query) > 0
     
-    def insert_answer(self, question_id: str, model_name: str, nodes: List[Dict[str, Any]]) -> Any:
+    def insert_answer(self, question_id: Union[str, ObjectId], model_name: str, nodes: List[Dict[str, Any]]) -> Any:
         """
         Insert a single answer into the collection.
         
         Args:
-            question_id: ID of the question
+            question_id: ID of the question (can be string or ObjectId)
             model_name: Name of the embedding model
             nodes: List of search result nodes
             
         Returns:
             Inserted document ID
         """
+        # Convert string to ObjectId if needed
+        if isinstance(question_id, str):
+            question_id = ObjectId(question_id)
+            
         document = {
             "question_id": question_id,
             "model_name": model_name,
