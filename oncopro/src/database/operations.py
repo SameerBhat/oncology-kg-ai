@@ -181,3 +181,181 @@ class NodesManager:
                 (nodes_with_embeddings / total_nodes * 100) if total_nodes > 0 else 0
             )
         }
+
+
+class QuestionsManager:
+    """Manager class for question operations in MongoDB."""
+    
+    def __init__(self, client: Optional[MongoDBClient] = None, collection_name: str = "questions"):
+        """
+        Initialize QuestionsManager.
+        
+        Args:
+            client: MongoDBClient instance. If None, creates a new one.
+            collection_name: Name of the questions collection
+        """
+        self.client = client or MongoDBClient()
+        self.collection_name = collection_name
+        self._collection: Optional[Collection] = None
+    
+    @property
+    def collection(self) -> Collection:
+        """Get the questions collection."""
+        if self._collection is None:
+            self._collection = self.client.get_collection(self.collection_name)
+        return self._collection
+    
+    def insert_question(self, question_en: str, question_de: str) -> Any:
+        """
+        Insert a single question into the collection.
+        
+        Args:
+            question_en: English question text
+            question_de: German question text
+            
+        Returns:
+            Inserted document ID
+        """
+        document = {
+            "question_en": question_en,
+            "question_de": question_de
+        }
+        
+        result = self.collection.insert_one(document)
+        logger.info(f"Inserted question with ID: {result.inserted_id}")
+        return result.inserted_id
+    
+    def insert_questions_batch(self, questions: List[Dict[str, str]]) -> List[Any]:
+        """
+        Insert multiple questions into the collection.
+        
+        Args:
+            questions: List of dictionaries with 'question_en' and 'question_de' keys
+            
+        Returns:
+            List of inserted document IDs
+        """
+        if not questions:
+            logger.warning("No questions to insert")
+            return []
+        
+        result = self.collection.insert_many(questions)
+        logger.info(f"Inserted {len(result.inserted_ids)} questions")
+        return result.inserted_ids
+    
+    def count_questions(self) -> int:
+        """
+        Count total number of questions in the collection.
+        
+        Returns:
+            Total number of questions
+        """
+        return self.collection.count_documents({})
+    
+    def clear_all_questions(self) -> int:
+        """
+        Clear all questions from the collection.
+        
+        Returns:
+            Number of questions deleted
+        """
+        result = self.collection.delete_many({})
+        logger.info(f"Deleted {result.deleted_count} questions from collection")
+        return result.deleted_count
+    
+    def get_questions(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Retrieve questions from the collection.
+        
+        Args:
+            limit: Maximum number of questions to retrieve. If None, retrieves all.
+            
+        Returns:
+            List of question documents
+        """
+        cursor = self.collection.find({})
+        if limit:
+            cursor = cursor.limit(limit)
+        
+        return list(cursor)
+    
+    def question_exists(self, question_en: str, question_de: str) -> bool:
+        """
+        Check if a question already exists in the collection.
+        
+        Args:
+            question_en: English question text
+            question_de: German question text
+            
+        Returns:
+            True if question exists, False otherwise
+        """
+        query = {
+            "$or": [
+                {"question_en": question_en, "question_de": question_de},
+                {"question_en": question_en},
+                {"question_de": question_de}
+            ]
+        }
+        
+        return self.collection.count_documents(query) > 0
+    
+    def get_existing_questions_set(self) -> set:
+        """
+        Get a set of existing question tuples for efficient duplicate checking.
+        
+        Returns:
+            Set of (question_en, question_de) tuples
+        """
+        cursor = self.collection.find({}, {"question_en": 1, "question_de": 1})
+        return {(doc.get("question_en", ""), doc.get("question_de", "")) for doc in cursor}
+    
+    def insert_questions_batch_idempotent(self, questions: List[Dict[str, str]]) -> Dict[str, int]:
+        """
+        Insert multiple questions into the collection, skipping duplicates.
+        
+        Args:
+            questions: List of dictionaries with 'question_en' and 'question_de' keys
+            
+        Returns:
+            Dictionary with counts of inserted, skipped, and total questions
+        """
+        if not questions:
+            logger.warning("No questions to insert")
+            return {"inserted": 0, "skipped": 0, "total": 0}
+        
+        # Get existing questions for efficient comparison
+        existing_questions = self.get_existing_questions_set()
+        logger.info(f"Found {len(existing_questions)} existing questions in collection")
+        
+        # Filter out duplicates
+        new_questions = []
+        skipped_count = 0
+        
+        for question in questions:
+            question_en = question.get('question_en', '')
+            question_de = question.get('question_de', '')
+            question_tuple = (question_en, question_de)
+            
+            if question_tuple in existing_questions:
+                skipped_count += 1
+                logger.debug(f"Skipping duplicate question: EN='{question_en[:50]}...', DE='{question_de[:50]}...'")
+            else:
+                new_questions.append(question)
+                existing_questions.add(question_tuple)  # Add to set to prevent duplicates within the batch
+        
+        # Insert only new questions
+        inserted_count = 0
+        if new_questions:
+            result = self.collection.insert_many(new_questions)
+            inserted_count = len(result.inserted_ids)
+            logger.info(f"Inserted {inserted_count} new questions")
+        
+        if skipped_count > 0:
+            logger.info(f"Skipped {skipped_count} duplicate questions")
+        
+        return {
+            "inserted": inserted_count,
+            "skipped": skipped_count,
+            "total": len(questions)
+        }

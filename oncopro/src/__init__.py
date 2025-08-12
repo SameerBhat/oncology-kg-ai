@@ -30,6 +30,7 @@ from .database import (
     MongoDBClient,
     NodesManager,
     NodeDocument,
+    QuestionsManager,
 )
 
 from .search import (
@@ -71,6 +72,7 @@ __all__ = [
     "MongoDBClient",
     "NodesManager",
     "NodeDocument",
+    "QuestionsManager",
     
     # Search classes
     "SearchManager",
