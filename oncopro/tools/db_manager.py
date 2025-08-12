@@ -15,6 +15,7 @@ from src import (
     MongoDBClient, 
     NodesManager,
     QuestionsManager,
+    AnswersManager,
     EMBEDDING_MODEL,
     setup_logging,
     log_embedding_stats
@@ -53,6 +54,68 @@ def show_sample_nodes(nodes_manager: NodesManager, limit: int = 5, with_embeddin
         if with_embeddings:
             print(f"   Embedding dimension: {embedding_dim}")
         print()
+
+
+def show_answers_stats(answers_manager: AnswersManager) -> None:
+    """Show answers collection statistics."""
+    stats = answers_manager.get_answers_stats()
+    print(f"\n📊 Answers Collection Statistics:")
+    print("=" * 40)
+    print(f"Total answers: {stats['total_answers']}")
+    
+    if stats['by_model']:
+        print(f"\nAnswers by model:")
+        for model, model_stats in stats['by_model'].items():
+            print(f"  {model}: {model_stats['count']} total, {model_stats['completed']} completed")
+    else:
+        print("No answers found in the collection.")
+
+
+def show_sample_answers(answers_manager: AnswersManager, limit: int = 5, model_name: str = None) -> None:
+    """Show sample answers from the collection."""
+    if model_name is None:
+        model_name = EMBEDDING_MODEL
+        
+    answers = answers_manager.get_answers(model_name=model_name, limit=limit)
+    
+    if not answers:
+        print(f"No answers found for model {model_name}.")
+        return
+    
+    print(f"\nSample {min(limit, len(answers))} answers for model {model_name}:")
+    print("=" * 70)
+    
+    for i, answer in enumerate(answers, 1):
+        answer_id = answer.get('_id')
+        question_id = answer.get('question_id')
+        nodes_count = len(answer.get('nodes', []))
+        completed = answer.get('completed', False)
+        
+        print(f"{i}. Answer ID: {answer_id}")
+        print(f"   Question ID: {question_id}")
+        print(f"   Nodes count: {nodes_count}")
+        print(f"   Completed: {'✅' if completed else '❌'}")
+        
+        # Show first node if available
+        nodes = answer.get('nodes', [])
+        if nodes:
+            first_node = nodes[0]
+            score = first_node.get('score', 0)
+            text = first_node.get('text', '')[:100] + '...' if len(first_node.get('text', '')) > 100 else first_node.get('text', '')
+            print(f"   Best match (score: {score:.3f}): {text}")
+        print()
+
+
+def clear_answers_by_model(answers_manager: AnswersManager, model_name: str, confirm: bool = False) -> None:
+    """Clear all answers for the specified model."""
+    if not confirm:
+        response = input(f"⚠️  This will remove ALL answers for model '{model_name}'. Are you sure? (yes/no): ")
+        if response.lower() != 'yes':
+            print("Operation cancelled.")
+            return
+    
+    count_deleted = answers_manager.clear_answers_by_model(model_name)
+    print(f"✅ Cleared {count_deleted} answers for model {model_name}.")
 
 
 def show_questions_stats(questions_manager: QuestionsManager) -> None:
@@ -124,6 +187,10 @@ def main():
     parser.add_argument("--questions-stats", action="store_true", help="Show questions collection statistics")
     parser.add_argument("--questions-sample", type=int, metavar="N", help="Show N sample questions")
     parser.add_argument("--clear-questions", action="store_true", help="Clear all questions from collection")
+    parser.add_argument("--answers-stats", action="store_true", help="Show answers collection statistics")
+    parser.add_argument("--answers-sample", type=int, metavar="N", help="Show N sample answers")
+    parser.add_argument("--clear-answers", action="store_true", help="Clear all answers for current model")
+    parser.add_argument("--answers-model", default=None, help="Model name for answers operations (default: current EMBEDDING_MODEL)")
     parser.add_argument("--questions-db", default="oncopro", help="Database name for questions (default: oncopro)")
     parser.add_argument("--confirm", action="store_true", help="Skip confirmation prompts")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
@@ -154,9 +221,10 @@ def main():
         if args.clear_embeddings:
             clear_all_embeddings(nodes_manager, args.confirm)
     
-    # Separate client for questions with different database
+    # Separate client for questions and answers with different database
     with MongoDBClient(database_name=args.questions_db) as questions_db_client:
         questions_manager = QuestionsManager(questions_db_client)
+        answers_manager = AnswersManager(questions_db_client)
         
         # Execute questions-related commands
         if args.questions_stats:
@@ -167,17 +235,32 @@ def main():
         
         if args.clear_questions:
             clear_all_questions(questions_manager, args.confirm)
+            
+        # Execute answers-related commands
+        if args.answers_stats:
+            show_answers_stats(answers_manager)
+        
+        if args.answers_sample:
+            model_name = args.answers_model or EMBEDDING_MODEL
+            show_sample_answers(answers_manager, args.answers_sample, model_name)
+        
+        if args.clear_answers:
+            model_name = args.answers_model or EMBEDDING_MODEL
+            clear_answers_by_model(answers_manager, model_name, args.confirm)
     
     # If no specific command, show both stats
     if not any([args.stats, args.sample_with, args.sample_without, args.clear_embeddings,
-               args.questions_stats, args.questions_sample, args.clear_questions]):
+               args.questions_stats, args.questions_sample, args.clear_questions,
+               args.answers_stats, args.answers_sample, args.clear_answers]):
         with MongoDBClient() as db_client:
             nodes_manager = NodesManager(db_client)
             show_stats(nodes_manager)
             
         with MongoDBClient(database_name=args.questions_db) as questions_db_client:
             questions_manager = QuestionsManager(questions_db_client)
+            answers_manager = AnswersManager(questions_db_client)
             show_questions_stats(questions_manager)
+            show_answers_stats(answers_manager)
 
 
 if __name__ == "__main__":

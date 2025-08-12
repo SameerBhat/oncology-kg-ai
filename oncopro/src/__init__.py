@@ -31,6 +31,7 @@ from .database import (
     NodesManager,
     NodeDocument,
     QuestionsManager,
+    AnswersManager,
 )
 
 from .search import (

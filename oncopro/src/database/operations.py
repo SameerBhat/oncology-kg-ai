@@ -365,3 +365,151 @@ class QuestionsManager:
             "skipped": skipped_count,
             "total": len(questions)
         }
+
+
+class AnswersManager:
+    """Manager class for answer operations in MongoDB."""
+    
+    def __init__(self, client: Optional[MongoDBClient] = None, collection_name: str = "answers"):
+        """
+        Initialize AnswersManager.
+        
+        Args:
+            client: MongoDBClient instance. If None, creates a new one with "oncopro" database.
+            collection_name: Name of the answers collection
+        """
+        if client is None:
+            # Create a new client with the "oncopro" database
+            self.client = MongoDBClient(database_name="oncopro")
+        else:
+            # Use the provided client (assumes it's already configured for the right database)
+            self.client = client
+        
+        self.collection_name = collection_name
+        self._collection: Optional[Collection] = None
+    
+    @property
+    def collection(self) -> Collection:
+        """Get the answers collection."""
+        if self._collection is None:
+            self._collection = self.client.get_collection(self.collection_name)
+        return self._collection
+    
+    def answer_exists(self, question_id: str, model_name: str) -> bool:
+        """
+        Check if an answer already exists for a given question and model.
+        
+        Args:
+            question_id: ID of the question
+            model_name: Name of the embedding model
+            
+        Returns:
+            True if answer exists, False otherwise
+        """
+        query = {
+            "question_id": question_id,
+            "model_name": model_name
+        }
+        
+        return self.collection.count_documents(query) > 0
+    
+    def insert_answer(self, question_id: str, model_name: str, nodes: List[Dict[str, Any]]) -> Any:
+        """
+        Insert a single answer into the collection.
+        
+        Args:
+            question_id: ID of the question
+            model_name: Name of the embedding model
+            nodes: List of search result nodes
+            
+        Returns:
+            Inserted document ID
+        """
+        document = {
+            "question_id": question_id,
+            "model_name": model_name,
+            "nodes": nodes,
+            "ordered_nodes": [],
+            "completed": False
+        }
+        
+        result = self.collection.insert_one(document)
+        logger.info(f"Inserted answer with ID: {result.inserted_id}")
+        return result.inserted_id
+    
+    def count_answers(self, model_name: Optional[str] = None) -> int:
+        """
+        Count total number of answers in the collection.
+        
+        Args:
+            model_name: Optional model name to filter by
+            
+        Returns:
+            Total number of answers
+        """
+        query = {}
+        if model_name:
+            query["model_name"] = model_name
+        
+        return self.collection.count_documents(query)
+    
+    def get_answers(self, model_name: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Retrieve answers from the collection.
+        
+        Args:
+            model_name: Optional model name to filter by
+            limit: Maximum number of answers to retrieve. If None, retrieves all.
+            
+        Returns:
+            List of answer documents
+        """
+        query = {}
+        if model_name:
+            query["model_name"] = model_name
+            
+        cursor = self.collection.find(query)
+        if limit:
+            cursor = cursor.limit(limit)
+        
+        return list(cursor)
+    
+    def clear_answers_by_model(self, model_name: str) -> int:
+        """
+        Clear all answers for a specific model.
+        
+        Args:
+            model_name: Name of the embedding model
+            
+        Returns:
+            Number of answers deleted
+        """
+        result = self.collection.delete_many({"model_name": model_name})
+        logger.info(f"Deleted {result.deleted_count} answers for model {model_name}")
+        return result.deleted_count
+    
+    def get_answers_stats(self) -> Dict[str, int]:
+        """
+        Get statistics about answers in the collection.
+        
+        Returns:
+            Dictionary with answer statistics
+        """
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$model_name",
+                    "count": {"$sum": 1},
+                    "completed": {"$sum": {"$cond": [{"$eq": ["$completed", True]}, 1, 0]}}
+                }
+            }
+        ]
+        
+        results = list(self.collection.aggregate(pipeline))
+        
+        stats = {
+            "total_answers": self.collection.count_documents({}),
+            "by_model": {result["_id"]: {"count": result["count"], "completed": result["completed"]} for result in results}
+        }
+        
+        return stats
