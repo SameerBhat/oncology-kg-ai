@@ -136,6 +136,7 @@ The script is **idempotent by default**, meaning you can run it multiple times s
 ### Example Output
 
 **First Run:**
+
 ```
 2025-08-12 20:23:28,411 [INFO] Found 0 existing questions in collection
 2025-08-12 20:23:28,411 [INFO] Inserted 13 new questions
@@ -143,6 +144,7 @@ The script is **idempotent by default**, meaning you can run it multiple times s
 ```
 
 **Second Run (Idempotent):**
+
 ```
 2025-08-12 20:22:40,477 [INFO] Found 13 existing questions in collection
 2025-08-12 20:22:40,478 [INFO] Skipped 13 duplicate questions

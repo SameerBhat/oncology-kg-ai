@@ -124,6 +124,7 @@ def main():
     parser.add_argument("--questions-stats", action="store_true", help="Show questions collection statistics")
     parser.add_argument("--questions-sample", type=int, metavar="N", help="Show N sample questions")
     parser.add_argument("--clear-questions", action="store_true", help="Clear all questions from collection")
+    parser.add_argument("--questions-db", default="oncopro", help="Database name for questions (default: oncopro)")
     parser.add_argument("--confirm", action="store_true", help="Skip confirmation prompts")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
     
@@ -134,13 +135,13 @@ def main():
     setup_logging(log_level)
     
     logging.info(f"Using database for embedding model: {EMBEDDING_MODEL}")
+    logging.info(f"Using database for questions: {args.questions_db}")
     
     # Initialize database components
     with MongoDBClient() as db_client:
         nodes_manager = NodesManager(db_client)
-        questions_manager = QuestionsManager(db_client)
         
-        # Execute commands based on arguments
+        # Execute nodes-related commands
         if args.stats:
             show_stats(nodes_manager)
         
@@ -152,7 +153,12 @@ def main():
         
         if args.clear_embeddings:
             clear_all_embeddings(nodes_manager, args.confirm)
+    
+    # Separate client for questions with different database
+    with MongoDBClient(database_name=args.questions_db) as questions_db_client:
+        questions_manager = QuestionsManager(questions_db_client)
         
+        # Execute questions-related commands
         if args.questions_stats:
             show_questions_stats(questions_manager)
         
@@ -161,11 +167,16 @@ def main():
         
         if args.clear_questions:
             clear_all_questions(questions_manager, args.confirm)
-        
-        # If no specific command, show stats by default
-        if not any([args.stats, args.sample_with, args.sample_without, args.clear_embeddings,
-                   args.questions_stats, args.questions_sample, args.clear_questions]):
+    
+    # If no specific command, show both stats
+    if not any([args.stats, args.sample_with, args.sample_without, args.clear_embeddings,
+               args.questions_stats, args.questions_sample, args.clear_questions]):
+        with MongoDBClient() as db_client:
+            nodes_manager = NodesManager(db_client)
             show_stats(nodes_manager)
+            
+        with MongoDBClient(database_name=args.questions_db) as questions_db_client:
+            questions_manager = QuestionsManager(questions_db_client)
             show_questions_stats(questions_manager)
 
 

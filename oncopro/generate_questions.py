@@ -205,6 +205,7 @@ def main():
     setup_logging(log_level)
     
     logging.info(f"Using database for embedding model: {EMBEDDING_MODEL}")
+    logging.info(f"Questions will be stored in database: oncopro")
     
     try:
         # Load questions from XLSX
@@ -214,8 +215,8 @@ def main():
             logging.warning("No valid questions found in the file")
             return
         
-        # Initialize database components
-        with MongoDBClient() as db_client:
+        # Initialize database components - questions go to "oncopro" database
+        with MongoDBClient(database_name="oncopro") as db_client:
             questions_manager = QuestionsManager(db_client)
             
             # Store questions in database

@@ -191,10 +191,16 @@ class QuestionsManager:
         Initialize QuestionsManager.
         
         Args:
-            client: MongoDBClient instance. If None, creates a new one.
+            client: MongoDBClient instance. If None, creates a new one with "oncopro" database.
             collection_name: Name of the questions collection
         """
-        self.client = client or MongoDBClient()
+        if client is None:
+            # Create a new client with the "oncopro" database
+            self.client = MongoDBClient(database_name="oncopro")
+        else:
+            # Use the provided client (assumes it's already configured for the right database)
+            self.client = client
+        
         self.collection_name = collection_name
         self._collection: Optional[Collection] = None
     
