@@ -188,7 +188,7 @@ def generate_answers_for_questions(
             nodes_data = []
             for result in search_results:
                 node_data = {
-                    "_id": result["_id"],
+                    "id": result["nodeid"],
                     "text": result.get("text", ""),
                     "richText": result.get("richText", ""),
                     "notes": result.get("notes", ""),
