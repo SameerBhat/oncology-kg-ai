@@ -1,4 +1,4 @@
-# 
+# bootstrap_qrels_from_ordered.py
 import os, sys, time
 from datetime import datetime,timezone
 from typing import Any, Dict, List
@@ -68,22 +68,29 @@ inserted = 0
 updated = 0
 for qid, rels in per_q.items():
     for nid, rel in rels.items():
-        doc = {
+        insert_doc = {
             "question_id": qid,
             "node_id": nid,
-            "relevance": int(rel),
             "qrels_version": QRELS_VERSION,
             "created_at": now,
             "created_by": CREATED_BY,
         }
+        update_doc = {
+            "relevance": int(rel),
+            "updated_at": now
+        }
         try:
-            qrels.update_one(
+            result = qrels.update_one(
                 {"question_id": qid, "node_id": nid, "qrels_version": QRELS_VERSION},
-                {"$setOnInsert": doc, "$set": {"relevance": int(rel), "updated_at": now}},
+                {"$setOnInsert": insert_doc, "$set": update_doc},
                 upsert=True,
             )
-            inserted += 1
-        except Exception:
+            if result.upserted_id:
+                inserted += 1
+            else:
+                updated += 1
+        except Exception as e:
+            print(f"Error upserting qrel for question {qid}, node {nid}: {e}")
             updated += 1
 
 print(f"qrels bootstrap done: upserts={inserted}, updated={updated}, questions={len(per_q)}")
