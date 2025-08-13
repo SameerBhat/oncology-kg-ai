@@ -21,7 +21,7 @@ Usage:
     python generate_answers.py [options]
 
 Examples:
-    # Generate answers for all questions (top 5 results per question)
+    # Generate answers for all questions (top 10 results per question)
     python generate_answers.py
 
     # Generate answers with top 10 results per question
@@ -224,7 +224,7 @@ def generate_answers_for_questions(
 def main():
     """Main function for generating answers."""
     parser = argparse.ArgumentParser(description="Generate answers by searching questions using embeddings")
-    parser.add_argument("--top-k", type=int, default=5, 
+    parser.add_argument("--top-k", type=int, default=10, 
                         help="Number of top search results to store per question (default: 5)")
     parser.add_argument("--threshold", type=float, default=0.0,
                         help="Minimum similarity score threshold (default: 0.0)")
