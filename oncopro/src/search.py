@@ -192,7 +192,7 @@ class SearchManager:
             # Get all nodes with embeddings
             nodes_with_embeddings = list(self.collection.find(
                 {"embedding": {"$exists": True}},
-                {"_id": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
+                {"_id": 1, "nodeid": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
             ))
             
             if not nodes_with_embeddings:
@@ -210,7 +210,7 @@ class SearchManager:
                 if embedding and len(embedding) > 0:
                     node_embeddings.append(embedding)
                     node_data.append({
-                        "_id": str(node["_id"]),
+                        "nodeid": node.get("nodeid", ""),
                         "text": node.get("text", ""),
                         "richText": node.get("richText", ""),
                         "notes": node.get("notes", ""),
@@ -233,7 +233,7 @@ class SearchManager:
             for i, (node, score) in enumerate(zip(node_data, similarities)):
                 if score >= threshold:
                     result = {
-                        "_id": node["_id"],
+                        "nodeid": node["nodeid"],
                         "text": node["text"],
                         "richText": node["richText"],
                         "notes": node["notes"],
@@ -284,9 +284,8 @@ class SearchManager:
         """
         try:
             # Get the reference node
-            from bson import ObjectId
             reference_node = self.collection.find_one(
-                {"_id": ObjectId(node_id), "embedding": {"$exists": True}},
+                {"nodeid": node_id, "embedding": {"$exists": True}},
                 {"embedding": 1, "text": 1}
             )
             
@@ -301,11 +300,11 @@ class SearchManager:
             # Get all other nodes with embeddings
             filter_query = {"embedding": {"$exists": True}}
             if exclude_self:
-                filter_query["_id"] = {"$ne": ObjectId(node_id)}
+                filter_query["nodeid"] = {"$ne": node_id}
             
             nodes_with_embeddings = list(self.collection.find(
                 filter_query,
-                {"_id": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
+                {"_id": 1, "nodeid": 1, "embedding": 1, "text": 1, "richText": 1, "notes": 1, "links": 1, "attributes": 1}
             ))
             
             if not nodes_with_embeddings:
@@ -320,7 +319,7 @@ class SearchManager:
                 if embedding and len(embedding) > 0:
                     node_embeddings.append(embedding)
                     node_data.append({
-                        "_id": str(node["_id"]),
+                        "nodeid": node.get("nodeid", str(node["_id"])),
                         "text": node.get("text", ""),
                         "richText": node.get("richText", ""),
                         "notes": node.get("notes", ""),
@@ -338,7 +337,7 @@ class SearchManager:
             scored_results = []
             for node, score in zip(node_data, similarities):
                 result = {
-                    "_id": node["_id"],
+                    "nodeid": node["nodeid"],
                     "text": node["text"],
                     "richText": node["richText"],
                     "notes": node["notes"],
@@ -461,9 +460,8 @@ class SearchManager:
         """
         try:
             # Get the reference node
-            from bson import ObjectId
             reference_node = self.collection.find_one(
-                {"_id": ObjectId(node_id), "embedding": {"$exists": True}},
+                {"nodeid": node_id, "embedding": {"$exists": True}},
                 {"embedding": 1, "content": 1}
             )
             
@@ -478,7 +476,7 @@ class SearchManager:
             # Get all other nodes with embeddings
             filter_query = {"embedding": {"$exists": True}}
             if exclude_self:
-                filter_query["_id"] = {"$ne": ObjectId(node_id)}
+                filter_query["nodeid"] = {"$ne": node_id}
             
             nodes_with_embeddings = list(self.collection.find(
                 filter_query,
@@ -497,7 +495,7 @@ class SearchManager:
                 if embedding and len(embedding) > 0:
                     node_embeddings.append(embedding)
                     node_data.append({
-                        "_id": str(node["_id"]),
+                        "nodeid": node.get("nodeid", str(node["_id"])),
                         "content": node.get("content", ""),
                         "metadata": node.get("metadata", {})
                     })
@@ -512,7 +510,7 @@ class SearchManager:
             scored_results = []
             for node, score in zip(node_data, similarities):
                 scored_results.append({
-                    "_id": node["_id"],
+                    "nodeid": node["nodeid"],
                     "content": node["content"],
                     "metadata": node["metadata"],
                     "score": float(score)
