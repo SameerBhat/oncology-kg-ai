@@ -4,7 +4,7 @@
 
 **Question (EN):** 
 
-**Model:** nomicv2
+**Model:** bgem3
 
 **NDCG@10:** 1.000
 

@@ -1,8 +1,3 @@
-python compute_metrics.py \
- --qrels-version v1 \
- --k 1 3 5 10 \
- --bootstrap 1000 \
- --outdir metrics_out
 Optional filters:
 
 # Only Jina and Qwen models
