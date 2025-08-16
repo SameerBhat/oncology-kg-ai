@@ -146,7 +146,7 @@ embedding = embed_text("test", model_name="custom")
 
 ```bash
 # Create virtual environment
-python3 -m venv venv
+python -m venv venv
 
 # Activate (Unix/macOS)
 source venv/bin/activate
@@ -170,6 +170,52 @@ pip freeze > requirements.txt
 
 ## License
 
-MIT License
-python generate_db_embeddings.py
+TO generate embeddings from source
 npm run convert-mm-db
+To generate embeddings from source using current selected model in env
+python generate_db_embeddings.py
+
+##After data is annotated, run the following steps to compute metrics and generate reports:
+
+# 1) Build curated qrels from completed answers (temporary, binary, top-R=5)
+python bootstrap_qrels_from_ordered.py
+```shell
+qrels bootstrap done: upserts=485, updated=0, questions=21, kept=384, skipped_dup_flag=0, skipped_repeat_id=0, skipped_irrelevant=228, manually_added=0
+```
+
+# 2) Flatten answers → runs
+python flatten_runs_from_answers.py
+```shell
+runs built: 1522 rows from 162 answers | skipped_dup_flag=0, skipped_repeat_id=0, manually_added=0, DROP_DUPLICATES=on
+```
+
+# 3) Compute metrics (CSV outputs in metrics_out/)
+python compute_metrics.py
+```shell
+[INFO] Loaded 485 qrels rows across 21 questions.
+[INFO] Loaded runs: 1522 rows -> 1522 kept after de-dup.
+[INFO] Models found: 6
+[OK] Wrote metrics_out/model_summary.csv
+[OK] Wrote metrics_out/per_query_metrics.csv
+[OK] Wrote metrics_out/per_query_ndcg10.csv
+[DONE] Metrics computed
+```
+
+# 4) (Optional) Significance tests
+python wilcoxon_significance.py
+```shell
+[OK] wrote tables/wilcoxon_ndcg10.csv and tables/wilcoxon_ndcg10.md
+```
+
+python plot_ir_figures.py 
+```shell
+[INFO] metrics_out/efficiency.csv not found; skipping latency figure.
+```
+python make_tables.py
+```shell
+[OK] Wrote tables/model_table.md and .tex
+```
+python generate_case_studies.py
+```shell
+FAIL
+```

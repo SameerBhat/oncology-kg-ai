@@ -4,7 +4,7 @@
 
 **Question (EN):** 
 
-**Model:** bgem3
+**Model:** gte
 
 **NDCG@10:** 1.000
 

@@ -83,3 +83,5 @@ data/*.csv
 
 # Test artifacts
 tests/__pycache__/
+.venvxx
+venvxx
