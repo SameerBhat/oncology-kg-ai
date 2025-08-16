@@ -5,7 +5,7 @@ from pymongo import MongoClient
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 DB = os.getenv("DB", "oncopro")
-TOP_R = int(os.getenv("TOP_R", "5"))
+TOP_R = int(os.getenv("TOP_R", "3"))
 QRELS_VERSION = os.getenv("QRELS_VERSION", "v1")
 CREATED_BY = os.getenv("CREATED_BY", "bootstrap")
 
@@ -33,6 +33,38 @@ def get_node_id(x: Any) -> str | None:
             return str(x["_id"])
     return None
 
+def get_original_index(x: Any) -> int | None:
+    """Extract original_index from OrderedNodeRecord. Returns -1 for manually added nodes."""
+    if not isinstance(x, dict):
+        return None
+    # For OrderedNodeRecord format: { node: ..., original_index: int }
+    if "original_index" in x:
+        try:
+            return int(x["original_index"])
+        except (ValueError, TypeError):
+            return None
+    return None
+
+def is_manually_added(x: Any) -> bool:
+    """Check if this is a manually added node (original_index = -1 or isManuallyAdded flag)."""
+    if not isinstance(x, dict):
+        return False
+    
+    # Check original_index = -1 in OrderedNodeRecord
+    original_idx = get_original_index(x)
+    if original_idx == -1:
+        return True
+    
+    # Check isManuallyAdded flag (either at top level or in nested node)
+    if x.get("isManuallyAdded") is True:
+        return True
+    
+    n = x.get("node")
+    if isinstance(n, dict) and n.get("isManuallyAdded") is True:
+        return True
+    
+    return False
+
 def is_marked_duplicate(x: Any) -> bool:
     """True if the element itself or its nested node carries isDuplicate=True."""
     if not isinstance(x, dict):
@@ -41,6 +73,17 @@ def is_marked_duplicate(x: Any) -> bool:
         return True
     n = x.get("node")
     if isinstance(n, dict) and n.get("isDuplicate") is True:
+        return True
+    return False
+
+def is_marked_irrelevant(x: Any) -> bool:
+    """True if the element itself or its nested node carries isIrrelevant=True."""
+    if not isinstance(x, dict):
+        return False
+    if x.get("isIrrelevant") is True:
+        return True
+    n = x.get("node")
+    if isinstance(n, dict) and n.get("isIrrelevant") is True:
         return True
     return False
 
@@ -60,39 +103,63 @@ cursor = answers.find({
 })
 
 per_q: Dict[str, Dict[str, int]] = {}
-kept_cnt = skipped_dup_flag = skipped_repeat_id = 0
+kept_cnt = skipped_dup_flag = skipped_repeat_id = skipped_irrelevant = manually_added_cnt = 0
 
 for a in cursor:
     qid = str(a.get("question_id") or a.get("question") or a.get("_id") or a.get("id"))
     if not qid:
         continue
 
+    # Prefer ordered_nodes over nodes for annotation evaluation
     items = a.get("ordered_nodes") or a.get("nodes") or []
     seen_ids = set()
     ranked_unique_ids: List[str] = []
+    irrelevant_ids: List[str] = []
 
     for elem in items:
-        # skip anything explicitly marked duplicate
+        # Skip anything explicitly marked duplicate
         if is_marked_duplicate(elem):
             skipped_dup_flag += 1
             continue
+        
         nid = get_node_id(elem)
         if not nid:
             continue
-        # skip repeats of the same node_id within this answer
+            
+        # Skip repeats of the same node_id within this answer
         if nid in seen_ids:
             skipped_repeat_id += 1
             continue
+            
         seen_ids.add(nid)
-        ranked_unique_ids.append(nid)
-        kept_cnt += 1
+        
+        # Track manually added nodes
+        if is_manually_added(elem):
+            manually_added_cnt += 1
+        
+        # Check if marked as irrelevant
+        if is_marked_irrelevant(elem):
+            irrelevant_ids.append(nid)
+            skipped_irrelevant += 1
+        else:
+            ranked_unique_ids.append(nid)
+            kept_cnt += 1
 
-    # Assign relevance: top-R unique items -> 1, rest -> 0
+    # Assign relevance based on your requirements:
+    # - Relevant nodes (rank 1-3): +1 point each  
+    # - Relevant nodes (rank 4+): 0 points
+    # - Irrelevant nodes: -1 point each
     rel_map = per_q.setdefault(qid, {})
+    
     for rank, nid in enumerate(ranked_unique_ids, start=1):
         rel = 1 if rank <= TOP_R else 0
-        # take the max across multiple models / answers
+        # Take the max across multiple models / answers
         rel_map[nid] = max(rel_map.get(nid, 0), rel)
+    
+    # Mark irrelevant nodes with negative relevance (-1)
+    for nid in irrelevant_ids:
+        # Always set to -1 for irrelevant nodes, regardless of other model ratings
+        rel_map[nid] = -1
 
 now = datetime.now(timezone.utc)
 inserted = updated = 0
@@ -117,5 +184,6 @@ for qid, rels in per_q.items():
 print(
     f"qrels bootstrap done: upserts={inserted}, updated={updated}, "
     f"questions={len(per_q)}, kept={kept_cnt}, "
-    f"skipped_dup_flag={skipped_dup_flag}, skipped_repeat_id={skipped_repeat_id}"
+    f"skipped_dup_flag={skipped_dup_flag}, skipped_repeat_id={skipped_repeat_id}, "
+    f"skipped_irrelevant={skipped_irrelevant}, manually_added={manually_added_cnt}"
 )
