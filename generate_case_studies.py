@@ -138,8 +138,8 @@ def render_case(path_md: str, qid: str, model: str, title: str):
         f.write("\n")
     print(f"[OK] wrote {path_md}")
 
-if succ[0] and succ[1]:
+if succ and succ[0] and succ[1]:
     render_case(os.path.join(OUTDIR, "success.md"), succ[0], succ[1], "Case Study — Success")
 
-if fail[0] and fail[1]:
+if fail and fail[0] and fail[1]:
     render_case(os.path.join(OUTDIR, "failure.md"), fail[0], fail[1], "Case Study — Failure")

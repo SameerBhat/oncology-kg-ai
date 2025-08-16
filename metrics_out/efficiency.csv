@@ -1,0 +1,7 @@
+model,median_latency_ms,index_size_mb,build_time_s
+bgem3,45.2,150.5,120.3
+gte,38.7,125.8,95.2
+jina4,52.1,180.2,145.7
+mpnetbase2,25.3,85.4,65.1
+nomicv2,65.8,220.1,185.4
+openai,125.5,95.3,45.8
