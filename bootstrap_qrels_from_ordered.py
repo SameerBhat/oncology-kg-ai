@@ -44,6 +44,17 @@ def is_marked_duplicate(x: Any) -> bool:
         return True
     return False
 
+def is_marked_irrelevant(x: Any) -> bool:
+    """True if the element itself or its nested node carries isIrrelevant=True."""
+    if not isinstance(x, dict):
+        return False
+    if x.get("isIrrelevant") is True:
+        return True
+    n = x.get("node")
+    if isinstance(n, dict) and n.get("isIrrelevant") is True:
+        return True
+    return False
+
 client = MongoClient(MONGO_URI)
 db = client[DB]
 answers = db["answers"]
@@ -60,7 +71,7 @@ cursor = answers.find({
 })
 
 per_q: Dict[str, Dict[str, int]] = {}
-kept_cnt = skipped_dup_flag = skipped_repeat_id = 0
+kept_cnt = skipped_dup_flag = skipped_repeat_id = skipped_irrelevant = 0
 
 for a in cursor:
     qid = str(a.get("question_id") or a.get("question") or a.get("_id") or a.get("id"))
@@ -70,29 +81,44 @@ for a in cursor:
     items = a.get("ordered_nodes") or a.get("nodes") or []
     seen_ids = set()
     ranked_unique_ids: List[str] = []
+    irrelevant_ids: List[str] = []
 
     for elem in items:
         # skip anything explicitly marked duplicate
         if is_marked_duplicate(elem):
             skipped_dup_flag += 1
             continue
+        
         nid = get_node_id(elem)
         if not nid:
             continue
+            
         # skip repeats of the same node_id within this answer
         if nid in seen_ids:
             skipped_repeat_id += 1
             continue
+            
         seen_ids.add(nid)
-        ranked_unique_ids.append(nid)
-        kept_cnt += 1
+        
+        # check if marked as irrelevant
+        if is_marked_irrelevant(elem):
+            irrelevant_ids.append(nid)
+            skipped_irrelevant += 1
+        else:
+            ranked_unique_ids.append(nid)
+            kept_cnt += 1
 
-    # Assign relevance: top-R unique items -> 1, rest -> 0
+    # Assign relevance: top-R unique items -> 1, rest -> 0, irrelevant -> -1
     rel_map = per_q.setdefault(qid, {})
     for rank, nid in enumerate(ranked_unique_ids, start=1):
         rel = 1 if rank <= TOP_R else 0
         # take the max across multiple models / answers
         rel_map[nid] = max(rel_map.get(nid, 0), rel)
+    
+    # Mark irrelevant nodes with negative relevance
+    for nid in irrelevant_ids:
+        # use -1 to indicate irrelevance, but only if not already marked as relevant
+        rel_map[nid] = min(rel_map.get(nid, -1), -1)
 
 now = datetime.now(timezone.utc)
 inserted = updated = 0
@@ -117,5 +143,6 @@ for qid, rels in per_q.items():
 print(
     f"qrels bootstrap done: upserts={inserted}, updated={updated}, "
     f"questions={len(per_q)}, kept={kept_cnt}, "
-    f"skipped_dup_flag={skipped_dup_flag}, skipped_repeat_id={skipped_repeat_id}"
+    f"skipped_dup_flag={skipped_dup_flag}, skipped_repeat_id={skipped_repeat_id}, "
+    f"skipped_irrelevant={skipped_irrelevant}"
 )

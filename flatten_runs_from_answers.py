@@ -44,6 +44,16 @@ def is_marked_duplicate(x: Any) -> bool:
         return True
     return False
 
+def is_marked_irrelevant(x: Any) -> bool:
+    if not isinstance(x, dict):
+        return False
+    if x.get("isIrrelevant") is True:
+        return True
+    n = x.get("node")
+    if isinstance(n, dict) and n.get("isIrrelevant") is True:
+        return True
+    return False
+
 inserted = answers_seen = 0
 skipped_dup_flag = skipped_repeat_id = 0
 
@@ -71,6 +81,8 @@ for a in answers.find({}):
 
         score = None
         original_index = None
+        is_irrelevant = is_marked_irrelevant(elem)
+        
         if isinstance(elem, dict):
             # score may be at top level (SavedNode) or nested under `node`
             try:
@@ -94,6 +106,7 @@ for a in answers.find({}):
                 "rank": rank,              # rank over kept (unique) nodes
                 "score": score,
                 "original_index": original_index,
+                "is_irrelevant": is_irrelevant,  # track irrelevant status
             })
             inserted += 1
             rank += 1
