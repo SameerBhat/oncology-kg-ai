@@ -65,6 +65,17 @@ def demo_search_with_current_model():
                             print(f"     Content: {display_content}")
                         else:
                             print(f"     Content: [No text content]")
+
+                        context = result.get('graph_context') or {}
+                        if context:
+                            seed = context.get('seed_node')
+                            hop = context.get('hop_distance')
+                            sub_score = context.get('subgraph_score')
+                            if isinstance(sub_score, (int, float)):
+                                subgraph_str = f"{sub_score:.3f}"
+                            else:
+                                subgraph_str = "n/a"
+                            print(f"     Graph: seed={seed}, hop={hop}, subgraph={subgraph_str}")
                 else:
                     print("  No results found.")
                     
@@ -135,15 +146,14 @@ def demo_advanced_search_features():
         # Similarity search (if we have nodes)
         try:
             # Get a random node ID to test similarity
-            from bson import ObjectId
             sample_node = search_manager.collection.find_one(
-                {"embedding": {"$exists": True}}, 
-                {"_id": 1}
+                {"embedding": {"$exists": True}, "nodeid": {"$exists": True}},
+                {"nodeid": 1}
             )
             
             if sample_node:
-                node_id = str(sample_node["_id"])
-                print(f"\n🔗 Finding nodes similar to: {node_id[:10]}...")
+                node_id = sample_node.get("nodeid")
+                print(f"\n🔗 Finding nodes similar to: {node_id}")
                 
                 similar_nodes = search_manager.get_similar_nodes(node_id, top_k=2)
                 print(f"  Found {len(similar_nodes)} similar nodes")

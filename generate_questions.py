@@ -216,7 +216,7 @@ def main():
             return
         
         # Initialize database components - questions go to "oncopro" database
-        with MongoDBClient(database_name="oncopro") as db_client:
+        with MongoDBClient(database_name="nomicv2") as db_client:
             questions_manager = QuestionsManager(db_client)
             
             # Store questions in database

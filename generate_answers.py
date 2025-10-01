@@ -194,7 +194,8 @@ def generate_answers_for_questions(
                     "notes": result.get("notes", ""),
                     "links": result.get("links", []),
                     "attributes": result.get("attributes", {}),
-                    "score": result["score"]
+                    "score": result["score"],
+                    "graph_context": result.get("graph_context")
                 }
                 nodes_data.append(node_data)
             
@@ -252,7 +253,7 @@ def main():
     
     try:
         # Initialize database components - all using "oncopro" database
-        with MongoDBClient(database_name="oncopro") as questions_db_client:
+        with MongoDBClient(database_name="nomicv2") as questions_db_client:
             questions_manager = QuestionsManager(questions_db_client)
             answers_manager = AnswersManager(questions_db_client)
             
@@ -277,7 +278,7 @@ def main():
             logging.info(f"Found {search_stats['total_nodes_with_embeddings']} nodes with embeddings for search")
             
             # Generate answers
-            with MongoDBClient(database_name="oncopro") as questions_db_client:
+            with MongoDBClient(database_name="nomicv2") as questions_db_client:
                 questions_manager = QuestionsManager(questions_db_client)
                 answers_manager = AnswersManager(questions_db_client)
                 

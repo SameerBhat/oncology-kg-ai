@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Search functionality for querying embeddings using cosine similarity.
-This script allows searching through embedded nodes using various embedding models.
+Interactive CLI for the GRAG-backed search pipeline.
+
+The interface mirrors the previous cosine-similarity script while surfacing
+useful graph context (seed node, hop distance, neighbour relations) for each
+result.
 """
 
 import logging
@@ -67,7 +70,7 @@ def main() -> None:
                         
                         for i, result in enumerate(results, 1):
                             print(f"{i}. Score: {result['score']:.4f}")
-                            print(f"   ID: {result['_id']}")
+                            print(f"   ID: {result.get('id')}")
                             
                             # Display text content
                             text = result.get('text', '')
@@ -93,7 +96,25 @@ def main() -> None:
                             attributes = result.get('attributes', {})
                             if attributes:
                                 print(f"   Attributes: {attributes}")
-                            
+
+                            # Display graph context
+                            context = result.get('graph_context') or {}
+                            if context:
+                                seed = context.get('seed_node')
+                                hop = context.get('hop_distance')
+                                sub_score = context.get('subgraph_score')
+                                if isinstance(sub_score, (int, float)):
+                                    subgraph_str = f"{sub_score:.4f}"
+                                else:
+                                    subgraph_str = "n/a"
+                                print(f"   Seed: {seed} | Hop: {hop} | Subgraph score: {subgraph_str}")
+                                neighbors = context.get('neighbors') or []
+                                if neighbors:
+                                    neighbour_summary = ", ".join(
+                                        f"{n['nodeid']} ({'/'.join(n.get('relations', []))})" for n in neighbors[:3]
+                                    )
+                                    print(f"   Neighbours: {neighbour_summary}")
+
                             print()
                 
                 except ValueError:

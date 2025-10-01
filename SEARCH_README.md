@@ -1,273 +1,203 @@
 # Search System Documentation
 
-This search system provides comprehensive cosine similarity search capabilities across different embedding models in your OnCoPro project.
+The search stack now uses a Graph Retrieval-Augmented Generation (GRAG) strategy
+that couples semantic similarity with the structural topology of the
+OnCoPro/Oncology knowledge graph.  Each query produces a query-aware subgraph
+around the most relevant seed nodes, providing better contextual grounding than
+brute-force cosine matching.
 
 ## Overview
 
-The search system automatically integrates with your existing model factory and database setup. When you change the `EMBEDDING_MODEL` in your `.env` file, the search system will:
+When you change the `EMBEDDING_MODEL` in `.env`, the search system will:
 
-1. Connect to the corresponding database (named after the model)
-2. Use that model for generating query embeddings
-3. Apply model-specific search optimizations
+1. Connect to the database named after the embedding model
+2. Use that model for query embeddings
+3. Retrieve candidates through GRAG, blending node similarity and subgraph
+   relevance
+4. Return node-level payloads enriched with graph context (seed node, hop
+   distance, neighbouring relations)
 
 ## Quick Start
 
-### 1. Basic Interactive Search
+### 1. Interactive Search
 
 ```bash
 python search.py
 ```
 
-This starts an interactive search session where you can:
+The CLI mirrors the original workflow and now prints the graph provenance for
+each hit.
 
-- Enter search queries
-- Specify number of results (top_k)
-- Set similarity thresholds
-- See formatted results with scores
-
-### 2. Advanced Search Options
+### 2. Advanced Modes
 
 ```bash
 python search_advanced.py --mode interactive
 ```
 
-Advanced modes available:
+Available modes:
 
-- `--mode interactive`: Interactive search with model-specific recommendations
-- `--mode batch`: Search multiple queries at once
-- `--mode similarity`: Find nodes similar to a specific node
-- `--mode stats`: Show database and search statistics
+- `interactive`: enhanced console UI with model hints and graph context
+- `batch`: run multiple queries and capture aggregated metrics
+- `similarity`: fetch nodes similar to an existing `nodeid`
+- `stats`: show search/index statistics, including graph size
 
-### 3. Quick Single Query
+### 3. One-off Query
 
 ```bash
 python search_advanced.py --query "your search query" --top-k 10
 ```
 
-### 4. Batch Search
-
-```bash
-python search_advanced.py --mode batch --queries "query1" "query2" "query3"
-```
-
-### 5. Similarity Search
-
-```bash
-python search_advanced.py --mode similarity --node-id "NODE_ID_HERE"
-```
-
 ## Model Configuration
 
-Each embedding model has specific configurations that optimize search performance:
+Recommended parameters remain compatible with the previous system:
 
-### Jina4 (jina4)
+| Model      | Top-k | Threshold | Notes                                                    |
+|------------|-------|-----------|----------------------------------------------------------|
+| `jina4`    | 10    | 0.30      | Balanced for longer/multilingual queries                 |
+| `qwen34b`  | 8     | 0.25      | Strong for technical and multilingual content            |
+| `bgem3`    | 7     | 0.20      | Optimised for multilingual & cross-lingual retrieval     |
+| `nvembedv2`| 5     | 0.40      | Best with English content, benefits from higher thresholds|
+| `openai`   | 10    | 0.30      | General-purpose baseline                                 |
 
-- **Recommended top_k**: 10
-- **Recommended threshold**: 0.3
-- **Notes**: Performs well with longer queries and multilingual content
+## Database Expectations
 
-### Qwen34B (qwen34b)
-
-- **Recommended top_k**: 8
-- **Recommended threshold**: 0.25
-- **Notes**: Good for technical and multilingual content
-
-### BGE-M3 (bgem3)
-
-- **Recommended top_k**: 7
-- **Recommended threshold**: 0.2
-- **Notes**: Optimized for multilingual and cross-lingual retrieval
-
-### NVIDIA EmbedV2 (nvembedv2)
-
-- **Recommended top_k**: 5
-- **Recommended threshold**: 0.4
-- **Notes**: Works best with English content, may need higher thresholds
-
-### OpenAI (openai)
-
-- **Recommended top_k**: 10
-- **Recommended threshold**: 0.3
-- **Notes**: Well-balanced for most use cases
-
-## Database Structure
-
-The search system expects nodes in MongoDB with the following structure:
+Nodes are stored in MongoDB with the existing schema produced by the ingestion
+pipeline.  The retriever consumes the following fields (additional fields are
+preserved pass-through):
 
 ```json
 {
   "_id": ObjectId("..."),
-  "content": "Text content of the node",
-  "embedding": [0.1, 0.2, 0.3, ...], // Vector embedding
-  "metadata": {
-    "source": "optional metadata",
-    "category": "optional category"
-  }
+  "nodeid": "unique-node-id",
+  "text": "Primary label",
+  "richText": "Long form description or HTML",
+  "notes": "Free-form notes",
+  "links": ["https://..."],
+  "attributes": [{"name": "Status", "value": "Approved"}],
+  "embedding": [0.1, 0.2, ...],
+  "parentID": ObjectId("..."),
+  "children": [ObjectId("...")],
+  "linkedNodes": [ObjectId("...")]
 }
 ```
 
-## Switching Models
-
-To switch between models:
-
-1. Update your `.env` file:
-
-   ```env
-   EMBEDDING_MODEL=jina4  # or qwen34b, bgem3, etc.
-   ```
-
-2. The search system will automatically:
-   - Connect to the `jina4` database
-   - Use the Jina4 embedding model for queries
-   - Apply Jina4-specific search optimizations
+Edges are derived from `parentID`, `children`, and `linkedNodes`, then cached in
+memory for fast GRAG retrieval.
 
 ## Programming Interface
-
-### Basic Usage
 
 ```python
 from src import MongoDBClient, SearchManager
 
-# Use current model from .env
 with MongoDBClient() as db_client:
     search_manager = SearchManager(db_client)
-    results = search_manager.cosine_search("your query", top_k=5)
-
-# Use specific model
-with MongoDBClient(database_name="jina4") as db_client:
-    search_manager = SearchManager(db_client, embedding_model_name="jina4")
-    results = search_manager.cosine_search("your query", top_k=5)
+    results = search_manager.search("targeted therapy", top_k=5)
 ```
 
-### Search Methods
+To pin a specific embedding model/database:
 
 ```python
-# Basic cosine similarity search
-results = search_manager.cosine_search(
-    query="search query",
+with MongoDBClient(database_name="jina4") as db_client:
+    search_manager = SearchManager(db_client, embedding_model_name="jina4")
+    results = search_manager.search("angiogenesis", top_k=5)
+```
+
+## Search Methods
+
+```python
+# Graph-aware search
+results = search_manager.search(
+    query="precision oncology",
     top_k=5,
-    threshold=0.3
+    threshold=0.1,
 )
 
-# Find similar nodes
+# Historical alias (still available)
+legacy = search_manager.cosine_search("precision oncology", top_k=5)
+
+# Find neighbours for an existing node
 similar = search_manager.get_similar_nodes(
     node_id="NODE_ID",
     top_k=5,
-    exclude_self=True
+    exclude_self=True,
 )
 
-# Batch search
+# Batch queries
 batch_results = search_manager.batch_search(
-    queries=["query1", "query2"],
-    top_k=5
+    queries=["immune checkpoint", "tumour microenvironment"],
+    top_k=5,
 )
 
-# Get search statistics
+# Retrieve stats (includes graph and embedding metadata)
 stats = search_manager.get_search_stats()
 ```
 
-### Result Format
+## Result Payload
 
-Search results are returned as:
+Each hit includes the node information alongside GRAG metadata:
 
 ```python
-[
-    {
-        "_id": "node_id",
-        "content": "node content",
-        "metadata": {...},
-        "score": 0.85,
-        "model_used": "jina4"
-    },
-    ...
-]
+{
+    "nodeid": "NODE_123",
+    "id": "64f...",
+    "text": "VEGF signalling",
+    "richText": "Longer description...",
+    "notes": "Clinical trial evidence...",
+    "links": ["https://example.org"],
+    "attributes": [{"name": "Phase", "value": "III"}],
+    "score": 0.78,
+    "graph_context": {
+        "seed_node": "NODE_045",
+        "hop_distance": 1,
+        "subgraph_score": 0.81,
+        "local_similarity": 0.75,
+        "neighbors": [
+            {"nodeid": "NODE_200", "relations": ["hierarchy"]},
+            {"nodeid": "NODE_265", "relations": ["link"]}
+        ]
+    }
+}
 ```
 
-## Model-Specific Features
+Persisted answer documents automatically store the `graph_context` so downstream
+pipelines retain visibility into the retrieval rationale.
 
-The search system includes model-specific optimizations:
+## Similarity Mode
 
-### Query Preprocessing
+`get_similar_nodes` now composes a synthetic query from the node's textual
+fields and runs GRAG search.  This keeps behaviour consistent with prior cosine
+matching while benefiting from graph-structured retrieval.
 
-- Different models may benefit from different query formatting
-- Automatic query preprocessing based on model type
+## Monitoring the Index
 
-### Similarity Calculation
+`search_manager.refresh_index(force=True)` forces a rebuild of the in-memory
+cache.  The cache automatically refreshes based on `GragConfig.cache_ttl_seconds`
+(15 minutes by default).  `get_search_stats()` reports:
 
-- Most models use cosine similarity
-- Framework allows for model-specific similarity metrics
-- Future support for different distance metrics
+- total nodes in the MongoDB collection
+- nodes included in the indexed graph (i.e. with embeddings)
+- edges captured in the graph index
+- embedding dimensionality and last rebuild timestamp
 
-### Search Configuration
+## Customising GRAG Parameters
 
-- Model-specific recommended parameters
-- Automatic threshold and top_k suggestions
-- Performance optimizations per model
+Pass a `GragConfig` instance to `SearchManager` to tune behaviour:
 
-## Examples
+```python
+from src import GragConfig, SearchManager
 
-### Demo Script
-
-Run the demo to see all features:
-
-```bash
-python demo_search.py
+config = GragConfig(hops=3, seed_top_k=32, node_weight=0.7, subgraph_weight=0.3)
+search_manager = SearchManager(grag_config=config)
 ```
 
-This demonstrates:
+Configuration fields:
 
-- Search with current model
-- Model switching capabilities
-- Advanced search features
-- Batch and similarity search
+- `hops`: number of hops explored from each seed node
+- `seed_top_k`: seeds expanded per query
+- `node_weight` / `subgraph_weight`: balance between direct similarity and
+graph context
+- `hop_decay`: geometric decay applied as distance from the seed increases
+- `max_context_neighbors`: how many neighbours are surfaced in the response
+- `cache_ttl_seconds`: lifespan of the cached index (set `None` to disable TTL)
 
-### Example Searches
-
-```bash
-# Medical content search
-python search_advanced.py --query "symptoms and diagnosis" --top-k 5
-
-# Technical content search
-python search_advanced.py --query "treatment protocols" --threshold 0.3
-
-# Batch medical search
-python search_advanced.py --mode batch --queries "symptoms" "treatment" "side effects"
-```
-
-## Performance Tips
-
-1. **Use appropriate thresholds**: Higher thresholds filter more results but may miss relevant content
-2. **Choose optimal top_k**: Balance between comprehensiveness and performance
-3. **Model-specific settings**: Use the recommended settings for each model
-4. **Batch processing**: Use batch search for multiple queries to improve efficiency
-
-## Troubleshooting
-
-### No Results Found
-
-- Check if embeddings exist: `python search_advanced.py --mode stats`
-- Run embedding generation: `python generate_db_embeddings.py`
-- Lower the similarity threshold
-
-### Model Switching Issues
-
-- Ensure the target model database exists
-- Check that embeddings were generated for that model
-- Verify model name in `.env` matches available models
-
-### Performance Issues
-
-- Use smaller top_k values
-- Increase similarity threshold to filter results
-- Consider using batch search for multiple queries
-
-## Integration with Existing Code
-
-The search system follows your DRY and modular principles:
-
-- **Database**: Uses your existing `MongoDBClient`
-- **Models**: Integrates with your `EmbeddingModelFactory`
-- **Configuration**: Respects your `.env` settings
-- **Logging**: Uses your existing logging setup
-
-No changes needed to existing code - just add search capabilities!
+Enjoy deeper, structure-aware retrieval across the Oncology knowledge graph!

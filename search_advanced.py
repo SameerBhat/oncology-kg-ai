@@ -26,8 +26,8 @@ def print_search_results(results: List[Dict[str, Any]], show_content_length: int
     print("=" * 80)
     
     for i, result in enumerate(results, 1):
-        print(f"\n{i}. Score: {result['score']:.4f} | Model: {result.get('model_used', 'unknown')}")
-        print(f"   ID: {result['_id']}")
+        print(f"\n{i}. Score: {result['score']:.4f}")
+        print(f"   ID: {result.get('id')}")
         
         # Display text content
         text = result.get('text', '')
@@ -56,7 +56,24 @@ def print_search_results(results: List[Dict[str, Any]], show_content_length: int
         attributes = result.get('attributes', {})
         if attributes:
             print(f"   Attributes: {json.dumps(attributes, indent=6)}")
-            
+
+        context = result.get('graph_context') or {}
+        if context:
+            seed = context.get('seed_node')
+            hop = context.get('hop_distance')
+            sub_score = context.get('subgraph_score')
+            if isinstance(sub_score, (int, float)):
+                subgraph_str = f"{sub_score:.4f}"
+            else:
+                subgraph_str = "n/a"
+            print(f"   Seed: {seed} | Hop: {hop} | Subgraph score: {subgraph_str}")
+            neighbors = context.get('neighbors') or []
+            if neighbors:
+                neighbour_summary = ", ".join(
+                    f"{n['nodeid']} ({'/'.join(n.get('relations', []))})" for n in neighbors[:3]
+                )
+                print(f"   Neighbours: {neighbour_summary}")
+
         print("-" * 40)
 
 
@@ -144,11 +161,14 @@ def show_stats(search_manager: SearchManager) -> None:
     print(f"Total nodes: {stats['total_nodes']}")
     print(f"Nodes with embeddings: {stats['total_nodes_with_embeddings']}")
     print(f"Nodes without embeddings: {stats['nodes_without_embeddings']}")
-    
+    print(f"Indexed edges: {stats.get('indexed_edges', 0)}")
+    print(f"Graph index last built: {stats.get('graph_last_built_at', 'n/a')}")
+
     if stats['total_nodes_with_embeddings'] == 0:
         print("\n⚠️  No embedded nodes found. Run generate_db_embeddings.py first.")
     else:
-        coverage = (stats['total_nodes_with_embeddings'] / stats['total_nodes']) * 100
+        total = stats['total_nodes'] or 1
+        coverage = (stats['total_nodes_with_embeddings'] / total) * 100
         print(f"Embedding coverage: {coverage:.1f}%")
 
 

@@ -38,6 +38,11 @@ from .search import (
     SearchManager,
 )
 
+from .retrieval import (
+    GragConfig,
+    GragRetriever,
+)
+
 from .config import (
     MAX_TOKENS,
     MAX_WORDS,
@@ -77,6 +82,8 @@ __all__ = [
     
     # Search classes
     "SearchManager",
+    "GragConfig",
+    "GragRetriever",
     
     # Utility functions
     "setup_logging",
